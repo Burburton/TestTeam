@@ -115,82 +115,90 @@ jobs:
           # Build the prompt based on command type
           case "$COMMAND" in
             /triage|auto-process)
-              PROMPT="Please triage and analyze this issue:
-          
+              PROMPT="Analyze and triage this GitHub issue. Write your analysis to docs/issues/issue-${ISSUE_NUMBER}-analysis.md
+
           Title: $ISSUE_TITLE
-          
+
           Body:
           $ISSUE_BODY
-          
-          Steps:
-          1. Classify the issue type (feature/bug/tech-debt/question)
-          2. Assign priority (P0-P3)
-          3. Suggest labels
-          4. Recommend next steps and which agent should handle it
-          5. If this is a feature request, create a design proposal"
+
+          Create a markdown file with:
+          1. Issue classification (feature/bug/tech-debt)
+          2. Priority (P0-P3)
+          3. Suggested labels
+          4. Brief analysis
+          5. Recommended next steps
+
+          Only create the analysis file, do not implement anything."
               ;;
             /design)
-              PROMPT="Design a solution for this issue:
-          
+              PROMPT="Create a design document for this feature request. Write to docs/designs/level-system-design.md
+
           Title: $ISSUE_TITLE
-          
+
           Body:
           $ISSUE_BODY
-          
-          Please provide:
-          1. Architecture overview
-          2. Implementation plan
-          3. File changes needed
-          4. Testing strategy"
+
+          Create a design document with:
+          1. Overview - brief description of the feature
+          2. Data structures - TypeScript interfaces/types needed
+          3. Key components - React components to create/modify
+          4. Implementation steps - ordered list of tasks
+
+          Keep it focused. Only create the design document, do not implement the code."
               ;;
             /implement)
-              PROMPT="Implement the solution for this issue:
-          
+              PROMPT="Implement the feature described in this issue. Start small with one component.
+
           Title: $ISSUE_TITLE
-          
+
           Body:
           $ISSUE_BODY
-          
-          Please:
-          1. Review the codebase
-          2. Implement the changes
-          3. Write/update tests
-          4. Ensure all tests pass
-          5. Commit and push changes"
+
+          Steps:
+          1. First, read existing code to understand the structure
+          2. Implement ONE small piece of the feature
+          3. Run 'npm run lint' to verify code style
+          4. Run 'npm test' to verify tests pass
+
+          Focus on making one small, working change. Don't try to implement everything at once."
               ;;
             /test)
-              PROMPT="Test and validate the implementation for this issue:
-          
+              PROMPT="Run tests and validate the implementation.
+
           Title: $ISSUE_TITLE
-          
+
           Body:
           $ISSUE_BODY
-          
+
           Please:
-          1. Run existing tests
-          2. Verify the implementation
-          3. Check for edge cases
-          4. Report any issues found"
+          1. Run 'npm test' and report results
+          2. Check for any lint errors with 'npm run lint'
+          3. Suggest additional tests if needed
+
+          Do not modify code, only analyze and report."
               ;;
             /ci-analyze)
-              PROMPT="Analyze recent CI failures and suggest fixes.
-          
+              PROMPT="Analyze recent CI failures.
+
           Please:
-          1. Check recent workflow runs
-          2. Identify failure patterns
-          3. Suggest fixes
-          4. Document findings"
+          1. Check the .github/workflows/ for CI configuration
+          2. Look at package.json for test/lint scripts
+          3. Identify common failure patterns
+          4. Suggest fixes
+
+          Write findings to docs/ci-analysis.md"
               ;;
             *)
-              PROMPT="Process this request:
-          
+              PROMPT="Help with this issue. Focus on ONE small task.
+
           Command: $COMMAND
           Issue Title: $ISSUE_TITLE
-          
+
           Body:
           $ISSUE_BODY
-          
-          Please help resolve this issue."
+
+          Start by understanding the codebase, then make one small improvement."
               ;;
           esac
           
@@ -199,6 +207,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           
       - name: Run OpenCode Agent
+        id: opencode
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.BAILIAN_API_KEY }}
@@ -207,21 +216,50 @@ jobs:
           echo "Command: ${{ needs.detect-command.outputs.command }}"
           echo "Issue: #${{ needs.detect-command.outputs.issue_number }}"
           
-          # Debug: show current directory and config
           echo "Current directory: $(pwd)"
-          echo "opencode.jsonc exists: $(test -f opencode.jsonc && echo 'yes' || echo 'no')"
+          echo "Config exists: $(test -f opencode.jsonc && echo 'yes' || echo 'no')"
           
-          # Run opencode with project config
-          timeout 300s opencode run --model "bailian/qwen3-coder-plus" "${{ steps.prompt.outputs.prompt }}" 2>&1 || echo "OpenCode completed or timed out"
+          echo ""
+          echo "=== Starting OpenCode ==="
+          echo ""
+          
+          # Run with 15 minute timeout
+          if timeout 900s opencode run --model "bailian/qwen3-coder-plus" "${{ steps.prompt.outputs.prompt }}" 2>&1; then
+            echo ""
+            echo "=== OpenCode completed successfully ==="
+            echo "completed=true" >> $GITHUB_OUTPUT
+          else
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -eq 124 ]; then
+              echo ""
+              echo "⚠️ OpenCode timed out after 15 minutes"
+              echo "timeout=true" >> $GITHUB_OUTPUT
+            else
+              echo ""
+              echo "❌ OpenCode exited with code $EXIT_CODE"
+              echo "error=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+          
+          echo ""
+          echo "=== Git Status ==="
+          git status
+          
+          echo ""
+          echo "=== Recent Files Changed ==="
+          git diff --name-only HEAD~1 2>/dev/null || echo "No previous commit to compare"
       
-      - name: Check for changes
+      - name: Commit changes if any
         run: |
           if [[ -n $(git status --porcelain) ]]; then
+            echo "📝 Committing changes..."
+            git add -A
+            git commit -m "feat: AI agent changes for issue #${{ needs.detect-command.outputs.issue_number }}" || echo "No changes to commit"
+            git push
             echo "changes=true" >> $GITHUB_OUTPUT
-            git status
           else
-            echo "changes=false" >> $GITHUB_OUTPUT
             echo "No changes made by agent"
+            echo "changes=false" >> $GITHUB_OUTPUT
           fi
       
       - name: Comment on issue
@@ -231,21 +269,38 @@ jobs:
           script: |
             const issueNumber = '${{ needs.detect-command.outputs.issue_number }}';
             const command = '${{ needs.detect-command.outputs.command }}';
+            const completed = '${{ steps.opencode.outputs.completed }}';
+            const timeout = '${{ steps.opencode.outputs.timeout }}';
+            const error = '${{ steps.opencode.outputs.error }}';
+            
+            let statusEmoji = '✅';
+            let statusText = 'completed successfully';
+            
+            if (timeout === 'true') {
+              statusEmoji = '⏱️';
+              statusText = 'timed out after 15 minutes - task may be too large';
+            } else if (error === 'true') {
+              statusEmoji = '❌';
+              statusText = 'encountered an error';
+            }
             
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issueNumber,
-              body: `## 🤖 OpenCode Agent Completed
-            
+              body: `## 🤖 OpenCode Agent ${statusEmoji}
+
             **Command:** \`${command}\`
+            **Status:** ${statusText}
             
-            The agent has processed this issue. Please check the [Actions log](${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.
+            📋 [View full log](${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
             
-            ### Next Steps
-            - Review the changes (if any)
-            - Run \`/design\` to get a detailed design
-            - Run \`/implement\` to implement the solution
-            - Run \`/test\` to validate the implementation
+            ### Available Commands
+            | Command | Purpose |
+            |---------|---------|
+            | \`/opencode /triage\` | Analyze and classify issue |
+            | \`/opencode /design\` | Create design document |
+            | \`/opencode /implement\` | Implement feature (one step at a time) |
+            | \`/opencode /test\` | Run tests and validate |
             `
             });
