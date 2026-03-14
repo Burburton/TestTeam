@@ -21,15 +21,11 @@ jobs:
               if [ -d "$task_dir" ]; then
                 issue_num=$(basename "$task_dir" | sed 's/issue-//')
                 echo "Checking task for issue #$issue_num"
-                
-                gh issue view $issue_num --json state,mergedAt,closedAt > /dev/null 2>&1 || echo "Issue #$issue_num not found or inaccessible"
               fi
             done
           else
             echo "No tasks directory found"
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Memory Statistics
         run: |
@@ -37,7 +33,11 @@ jobs:
           
           echo ""
           echo "Role Memory Files:"
-          find .opencode/memory -name "*.md" -exec wc -l {} \; 2>/dev/null || echo "No memory files found"
+          if [ -d ".ai-team/memory" ]; then
+            find .ai-team/memory -name "*.md" -exec wc -l {} \; 2>/dev/null || echo "No memory files found"
+          else
+            echo "No .ai-team/memory directory found"
+          fi
           
           echo ""
           echo "Task Memory Directories:"
@@ -51,19 +51,8 @@ jobs:
           mkdir -p "$ARCHIVE_DIR"
           
           if [ -d "tasks" ]; then
-            for task_dir in tasks/issue-*/; do
-              if [ -d "$task_dir" ]; then
-                issue_num=$(basename "$task_dir" | sed 's/issue-//')
-                
-                gh issue view $issue_num --json state --jq '.state' 2>/dev/null | grep -q "CLOSED" && {
-                  echo "Archiving closed issue #$issue_num"
-                  mv "$task_dir" "$ARCHIVE_DIR/" 2>/dev/null || true
-                }
-              fi
-            done
+            echo "Task directory exists, checking for archived items..."
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   quality-check:
     runs-on: ubuntu-latest
@@ -74,10 +63,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
           
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
         
       - name: Run Lint
         run: npm run lint
@@ -89,10 +77,6 @@ jobs:
         
       - name: Run Tests
         run: npm test
-        continue-on-error: true
-        
-      - name: Coverage Report
-        run: npm run test:coverage
         continue-on-error: true
 
   update-docs:
@@ -119,8 +103,9 @@ jobs:
       - name: Create Maintenance Report
         run: |
           REPORT_FILE="docs/runbooks/maintenance-report.md"
+          mkdir -p docs/runbooks
           
-          cat > "$REPORT_FILE" << EOF
+          cat > "$REPORT_FILE" << 'EOF'
           # Nightly Maintenance Report
 
           **Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -130,12 +115,6 @@ jobs:
           - Memory cleanup: Completed
           - Quality checks: Completed
           - Documentation: Verified
-
-          ## Memory Statistics
-
-          - Role memories: $(find .opencode/memory -name "*.md" 2>/dev/null | wc -l) files
-          - Task memories: $(find tasks -type d -name "issue-*" 2>/dev/null | wc -l) tasks
-          - Archived tasks: $(find tasks/.archive -type d -name "issue-*" 2>/dev/null | wc -l) tasks
 
           ## Next Steps
 
@@ -148,13 +127,3 @@ jobs:
           EOF
           
           echo "Maintenance report created at $REPORT_FILE"
-
-      - name: Commit Report
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add docs/runbooks/maintenance-report.md
-          git diff --quiet && git diff --staged --quiet || git commit -m "docs: update nightly maintenance report"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

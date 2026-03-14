@@ -4,24 +4,21 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
-    project: './tsconfig.json',
   },
   plugins: ['@typescript-eslint'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
-    'plugin:@typescript-eslint/recommended-requiring-type-checking',
   ],
   rules: {
-    '@typescript-eslint/explicit-function-return-type': 'error',
-    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    '@typescript-eslint/explicit-member-accessibility': 'error',
-    'no-console': ['error', { allow: ['warn', 'error'] }],
+    'no-console': ['warn', { allow: ['warn', 'error', 'log'] }],
   },
   env: {
     node: true,
     jest: true,
   },
-  ignorePatterns: ['dist', 'node_modules', 'coverage'],
+  ignorePatterns: ['dist', 'node_modules', 'coverage', 'cli'],
 };

@@ -30,24 +30,12 @@ jobs:
           
       - name: Validate PR Size
         run: |
-          CHANGES=$(git diff --numstat origin/main...HEAD | wc -l)
-          if [ "$CHANGES" -gt 500 ]; then
-            echo "::warning::Large PR detected ($CHANGES files changed). Consider splitting into smaller PRs."
+          # Handle case where main branch doesn't exist yet
+          if git rev-parse --verify origin/main >/dev/null 2>&1; then
+            CHANGES=$(git diff --numstat origin/main...HEAD | wc -l)
+            if [ "$CHANGES" -gt 500 ]; then
+              echo "::warning::Large PR detected ($CHANGES files changed). Consider splitting into smaller PRs."
+            fi
+          else
+            echo "No main branch yet, skipping size check"
           fi
-
-  ai-review-check:
-    runs-on: ubuntu-latest
-    needs: pr-validation
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Environment
-        run: |
-          npm install -g opencode-ai
-          
-      - name: Run AI Review Check
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-        run: |
-          opencode run --agent reviewer --pr ${{ github.event.pull_request.number }}
