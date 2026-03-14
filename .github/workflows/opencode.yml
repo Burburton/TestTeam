@@ -8,6 +8,18 @@ on:
   issues:
     types: [opened, labeled]
   workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: false
+      command:
+        description: 'Command to run (e.g., /implement, /design)'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   detect-command:
@@ -16,22 +28,54 @@ jobs:
       should_run: ${{ steps.check.outputs.should_run }}
       command: ${{ steps.check.outputs.command }}
       agent: ${{ steps.check.outputs.agent }}
+      issue_number: ${{ steps.check.outputs.issue_number }}
+      issue_body: ${{ steps.check.outputs.issue_body }}
+      issue_title: ${{ steps.check.outputs.issue_title }}
     steps:
       - name: Check for OpenCode command
         id: check
         run: |
           COMMENT="${{ github.event.comment.body }}"
           ISSUE_BODY="${{ github.event.issue.body }}"
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
           
+          # Manual workflow dispatch
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "command=${{ inputs.command || '/triage' }}" >> $GITHUB_OUTPUT
+            echo "agent=auto" >> $GITHUB_OUTPUT
+            echo "issue_number=${{ inputs.issue_number || '' }}" >> $GITHUB_OUTPUT
+            echo "issue_body=" >> $GITHUB_OUTPUT
+            echo "issue_title=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Issue comment with /opencode command
           if [[ "$COMMENT" == /opencode* ]]; then
             echo "should_run=true" >> $GITHUB_OUTPUT
-            echo "command=${COMMENT#/opencode }" >> $GITHUB_OUTPUT
+            CMD="${COMMENT#/opencode }"
+            if [[ -z "$CMD" ]]; then
+              CMD="auto-process"
+            fi
+            echo "command=$CMD" >> $GITHUB_OUTPUT
             AGENT=$(echo "$COMMENT" | grep -oP '(?<=use )\w+(?= to)' || echo "auto")
             echo "agent=$AGENT" >> $GITHUB_OUTPUT
+            echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+            echo "issue_body<<EOF" >> $GITHUB_OUTPUT
+            echo "$ISSUE_BODY" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
+          # New issue opened
           elif [[ "${{ github.event_name }}" == "issues" ]] && [[ "${{ github.event.action }}" == "opened" ]]; then
             echo "should_run=true" >> $GITHUB_OUTPUT
             echo "command=auto-process" >> $GITHUB_OUTPUT
             echo "agent=auto" >> $GITHUB_OUTPUT
+            echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+            echo "issue_body<<EOF" >> $GITHUB_OUTPUT
+            echo "$ISSUE_BODY" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
           else
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
@@ -42,16 +86,154 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           
+      - name: Install OpenCode
+        run: npm install -g opencode-ai
+        
+      - name: Configure Git
+        run: |
+          git config --global user.name "OpenCode Agent"
+          git config --global user.email "opencode@agent.ai"
+      
+      - name: Build prompt from issue
+        id: prompt
+        env:
+          ISSUE_NUMBER: ${{ needs.detect-command.outputs.issue_number }}
+          ISSUE_TITLE: ${{ needs.detect-command.outputs.issue_title }}
+          ISSUE_BODY: ${{ needs.detect-command.outputs.issue_body }}
+          COMMAND: ${{ needs.detect-command.outputs.command }}
+          AGENT: ${{ needs.detect-command.outputs.agent }}
+        run: |
+          # Build the prompt based on command type
+          case "$COMMAND" in
+            /triage|auto-process)
+              PROMPT="Please triage and analyze this issue:
+          
+          Title: $ISSUE_TITLE
+          
+          Body:
+          $ISSUE_BODY
+          
+          Steps:
+          1. Classify the issue type (feature/bug/tech-debt/question)
+          2. Assign priority (P0-P3)
+          3. Suggest labels
+          4. Recommend next steps and which agent should handle it
+          5. If this is a feature request, create a design proposal"
+              ;;
+            /design)
+              PROMPT="Design a solution for this issue:
+          
+          Title: $ISSUE_TITLE
+          
+          Body:
+          $ISSUE_BODY
+          
+          Please provide:
+          1. Architecture overview
+          2. Implementation plan
+          3. File changes needed
+          4. Testing strategy"
+              ;;
+            /implement)
+              PROMPT="Implement the solution for this issue:
+          
+          Title: $ISSUE_TITLE
+          
+          Body:
+          $ISSUE_BODY
+          
+          Please:
+          1. Review the codebase
+          2. Implement the changes
+          3. Write/update tests
+          4. Ensure all tests pass
+          5. Commit and push changes"
+              ;;
+            /test)
+              PROMPT="Test and validate the implementation for this issue:
+          
+          Title: $ISSUE_TITLE
+          
+          Body:
+          $ISSUE_BODY
+          
+          Please:
+          1. Run existing tests
+          2. Verify the implementation
+          3. Check for edge cases
+          4. Report any issues found"
+              ;;
+            /ci-analyze)
+              PROMPT="Analyze recent CI failures and suggest fixes.
+          
+          Please:
+          1. Check recent workflow runs
+          2. Identify failure patterns
+          3. Suggest fixes
+          4. Document findings"
+              ;;
+            *)
+              PROMPT="Process this request:
+          
+          Command: $COMMAND
+          Issue Title: $ISSUE_TITLE
+          
+          Body:
+          $ISSUE_BODY
+          
+          Please help resolve this issue."
+              ;;
+          esac
+          
+          echo "prompt<<EOF" >> $GITHUB_OUTPUT
+          echo "$PROMPT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
       - name: Run OpenCode Agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          echo "Running ${{ needs.detect-command.outputs.agent }} agent..."
-          # Add your OpenCode execution here
+          echo "🤖 Running OpenCode agent..."
+          echo "Command: ${{ needs.detect-command.outputs.command }}"
+          echo "Issue: #${{ needs.detect-command.outputs.issue_number }}"
+          
+          # Run opencode with the prompt
+          opencode run --agent "${{ needs.detect-command.outputs.agent }}" "${{ steps.prompt.outputs.prompt }}" || true
+      
+      - name: Comment on issue
+        if: needs.detect-command.outputs.issue_number != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = '${{ needs.detect-command.outputs.issue_number }}';
+            const command = '${{ needs.detect-command.outputs.command }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `## 🤖 OpenCode Agent Completed
+            
+            **Command:** \`${command}\`
+            
+            The agent has processed this issue. Please check the [Actions log](${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.
+            
+            ### Next Steps
+            - Review the changes (if any)
+            - Run \`/design\` to get a detailed design
+            - Run \`/implement\` to implement the solution
+            - Run \`/test\` to validate the implementation
+            `
+            });
