@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createBoard, areAdjacent, swapGems } from '../game/board'
+import { createBoard, areAdjacent } from '../game/board'
 import { findMatches, calculateScore } from '../game/match'
 import { DEFAULT_CONFIG } from '../types'
 
