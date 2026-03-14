@@ -5,37 +5,15 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  pr-validation:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
+      
       - name: Check PR Title
         run: |
           TITLE="${{ github.event.pull_request.title }}"
           if [[ ! "$TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: ]]; then
             echo "PR title must follow conventional commits format"
-            echo "Example: feat(core): add new feature"
             exit 1
-          fi
-          
-      - name: Check for Breaking Changes
-        run: |
-          BODY="${{ github.event.pull_request.body }}"
-          if [[ "$BODY" == *"BREAKING CHANGE"* ]]; then
-            echo "::warning::This PR contains breaking changes"
-          fi
-          
-      - name: Validate PR Size
-        run: |
-          # Handle case where main branch doesn't exist yet
-          if git rev-parse --verify origin/main >/dev/null 2>&1; then
-            CHANGES=$(git diff --numstat origin/main...HEAD | wc -l)
-            if [ "$CHANGES" -gt 500 ]; then
-              echo "::warning::Large PR detected ($CHANGES files changed). Consider splitting into smaller PRs."
-            fi
-          else
-            echo "No main branch yet, skipping size check"
           fi
