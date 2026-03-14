@@ -1,18 +1,23 @@
 import { useState, useCallback, useRef } from 'react'
-import { Gem, GameState, Position, DEFAULT_CONFIG } from '../types'
+import { Gem, GameState, Position } from '../types'
 import { createBoard, swapGems, areAdjacent } from '../game/board'
 import { findMatches, markMatchedGems, calculateScore, removeMatchedGems } from '../game/match'
 import { applyGravity, clearFallingState, delay } from '../game/fall'
+import { LevelManager } from '../utils/LevelManager'
+import { getSpecialGemType } from '../utils/specialGems'
 
 const ANIMATION_DELAY = 300
 
-export function useGameState() {
+export function useGameState(initialLevel: number = 1) {
+  const levelManagerRef = useRef<LevelManager>(new LevelManager(initialLevel))
+  const currentLevelConfig = levelManagerRef.current.getCurrentLevel()
+  
   const [gameState, setGameState] = useState<GameState>(() => ({
-    board: createBoard(DEFAULT_CONFIG),
+    board: createBoard(currentLevelConfig),
     score: 0,
-    moves: DEFAULT_CONFIG.movesLimit,
-    level: 1,
-    targetScore: DEFAULT_CONFIG.targetScore,
+    moves: currentLevelConfig.movesLimit,
+    level: initialLevel,
+    targetScore: currentLevelConfig.targetScore,
     isAnimating: false,
     selectedGem: null
   }))
@@ -31,8 +36,18 @@ export function useGameState() {
       
       await delay(ANIMATION_DELAY)
       
-      const { newBoard } = removeMatchedGems(currentBoard)
-      currentBoard = newBoard
+      const { newBoard: tempBoard } = removeMatchedGems(currentBoard)
+      currentBoard = [...tempBoard]
+      
+      // Check for special gem creation based on match characteristics
+      for (const match of matches) {
+        if (match.length >= 4) {  // Create special gem for 4+ length matches
+          const specialGemType = getSpecialGemType(match.length, match.type)
+          if (specialGemType) {
+            totalScore += 50  // Bonus for triggering special effect
+          }
+        }
+      }
       
       currentBoard = applyGravity(currentBoard)
       setGameState(prev => ({ ...prev, board: currentBoard }))
@@ -96,24 +111,51 @@ export function useGameState() {
     
     const { newBoard: processedBoard, additionalScore } = await processMatches(newBoard)
     
+    const newScore = gameState.score + additionalScore
+    
     setGameState(prev => ({
       ...prev,
       board: processedBoard,
-      score: prev.score + additionalScore,
+      score: newScore,
       isAnimating: false
     }))
     
+    // Check for level completion after score update
+    if (newScore >= gameState.targetScore && gameState.moves > 1) { // moves > 1 because 1 was subtracted above
+      // Player completed the level
+      setTimeout(() => {
+        if (levelManagerRef.current.getNextLevel()) {
+          levelManagerRef.current.goToNextLevel()
+          const nextLevelConfig = levelManagerRef.current.getCurrentLevel()
+          
+          setGameState({
+            board: createBoard(nextLevelConfig),
+            score: 0, // Reset score for new level
+            moves: nextLevelConfig.movesLimit,
+            level: nextLevelConfig.level,
+            targetScore: nextLevelConfig.targetScore,
+            isAnimating: false,
+            selectedGem: null
+          })
+        }
+      }, ANIMATION_DELAY * 3)
+    }
+    
     processingRef.current = false
-  }, [gameState, processMatches])
-  
-  const resetGame = useCallback(() => {
+  }, [gameState, processMatches, levelManagerRef])
+
+  const resetGame = useCallback((_?: React.MouseEvent<HTMLButtonElement>) => {
+    const startLevel = 1;
+    levelManagerRef.current.goToLevel(startLevel)
+    const currentLevelConfig = levelManagerRef.current.getCurrentLevel()
+
     processingRef.current = false
     setGameState({
-      board: createBoard(DEFAULT_CONFIG),
+      board: createBoard(currentLevelConfig),
       score: 0,
-      moves: DEFAULT_CONFIG.movesLimit,
-      level: 1,
-      targetScore: DEFAULT_CONFIG.targetScore,
+      moves: currentLevelConfig.movesLimit,
+      level: startLevel,
+      targetScore: currentLevelConfig.targetScore,
       isAnimating: false,
       selectedGem: null
     })

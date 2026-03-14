@@ -5,9 +5,12 @@ export interface Gem {
   col: number
   isMatched: boolean
   isFalling: boolean
+  special?: SpecialGemType
+  power?: number // For special effect strength
 }
 
-export type GemType = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange'
+export type GemType = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink'
+export type SpecialGemType = 'bomb' | 'lightning' | 'hypercube'
 
 export interface Position {
   row: number
@@ -64,7 +67,8 @@ export const GEM_COLORS: Record<GemType, string> = {
   green: '#22c55e',
   yellow: '#eab308',
   purple: '#a855f7',
-  orange: '#f97316'
+  orange: '#f97316',
+  pink: '#ec4899'
 }
 
 export const GEM_EMOJIS: Record<GemType, string> = {
@@ -73,5 +77,12 @@ export const GEM_EMOJIS: Record<GemType, string> = {
   green: '🟢',
   yellow: '🟡',
   purple: '🟣',
-  orange: '🟠'
+  orange: '🟠',
+  pink: '🌸'
+}
+
+export const SPECIAL_GEM_EMOJIS: Record<SpecialGemType, string> = {
+  bomb: '💣',
+  lightning: '⚡',
+  hypercube: '🔥'
 }

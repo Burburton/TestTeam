@@ -7,12 +7,13 @@ interface GameInfoProps {
 
 export function GameInfo({ score, moves, targetScore, level }: GameInfoProps) {
   const progress = Math.min((score / targetScore) * 100, 100)
+  const levelName = level <= 5 ? ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'][level - 1] : 'Max Level'
   
   return (
     <div className="game-info">
       <div className="info-item">
         <span className="info-label">关卡</span>
-        <span className="info-value">{level}</span>
+        <span className="info-value">{level} ({levelName})</span>
       </div>
       
       <div className="info-item">
@@ -30,11 +31,14 @@ export function GameInfo({ score, moves, targetScore, level }: GameInfoProps) {
         <span className={`info-value ${moves <= 5 ? 'warning' : ''}`}>{moves}</span>
       </div>
       
-      <div className="progress-bar">
-        <div 
-          className="progress-fill" 
-          style={{ width: `${progress}%` }}
-        />
+      <div className="progress-container">
+        <div className="progress-text">进度: {Math.round(progress)}%</div>
+        <div className="progress-bar">
+          <div 
+            className="progress-fill" 
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
     </div>
   )

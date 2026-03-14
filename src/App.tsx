@@ -9,7 +9,7 @@ function App() {
     handleGemClick,
     resetGame,
     isProcessing
-  } = useGameState()
+  } = useGameState(1)  // Start at level 1
 
   return (
     <div className="app">
