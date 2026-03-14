@@ -121,7 +121,7 @@ export function useGameState(initialLevel: number = 1) {
     }))
     
     // Check for level completion after score update
-    if (newScore >= gameState.targetScore && gameState.moves > 1) { // moves > 1 because 1 was subtracted above
+    if (newScore >= gameState.targetScore) { // Level up as soon as target score is met regardless of moves left
       // Player completed the level
       setTimeout(() => {
         if (levelManagerRef.current.getNextLevel()) {
