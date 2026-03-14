@@ -201,16 +201,36 @@ jobs:
       - name: Run OpenCode Agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.BAILIAN_API_KEY }}
         run: |
+          # Configure opencode to use Bailian provider
+          mkdir -p ~/.config/opencode
+          cat > ~/.config/opencode/opencode.json << 'CONFIG'
+          {
+            "provider": {
+              "bailian": {
+                "npm": "@ai-sdk/openai-compatible",
+                "name": "阿里百炼",
+                "options": {
+                  "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+                },
+                "models": {
+                  "qwen-max": { "name": "Qwen Max" },
+                  "qwen-plus": { "name": "Qwen Plus" },
+                  "qwen-turbo": { "name": "Qwen Turbo" },
+                  "qwen-coder-plus": { "name": "Qwen Coder Plus" }
+                }
+              }
+            }
+          }
+          CONFIG
+          
           echo "🤖 Running OpenCode agent..."
           echo "Command: ${{ needs.detect-command.outputs.command }}"
           echo "Issue: #${{ needs.detect-command.outputs.issue_number }}"
           
-          # Run opencode with the prompt
-          opencode run --agent "${{ needs.detect-command.outputs.agent }}" "${{ steps.prompt.outputs.prompt }}" || true
+          # Run opencode with Bailian model
+          opencode run --model "bailian/qwen-max" --agent "${{ needs.detect-command.outputs.agent }}" "${{ steps.prompt.outputs.prompt }}" || true
       
       - name: Comment on issue
         if: needs.detect-command.outputs.issue_number != ''

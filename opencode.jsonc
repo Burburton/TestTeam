@@ -2,10 +2,36 @@
   "$schema": "https://opencode.ai/schema.json",
   "version": "2.0.0",
   "project": {
-    "name": "ai-team-template",
-    "description": "AI-powered autonomous development team template - Reusable development foundation",
+    "name": "TestTeam",
+    "description": "Match-3 Puzzle Game",
     "language": "typescript",
-    "framework": "node"
+    "framework": "react"
+  },
+  "provider": {
+    "bailian": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "阿里百炼",
+      "options": {
+        "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "models": {
+        "qwen-max": {
+          "name": "Qwen Max"
+        },
+        "qwen-plus": {
+          "name": "Qwen Plus"
+        },
+        "qwen-turbo": {
+          "name": "Qwen Turbo"
+        },
+        "qwen-coder-plus": {
+          "name": "Qwen Coder Plus"
+        },
+        "qwen-coder-turbo": {
+          "name": "Qwen Coder Turbo"
+        }
+      }
+    }
   },
   "agents": {
     "planner": {
