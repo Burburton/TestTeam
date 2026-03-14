@@ -1,0 +1,38 @@
+# Foundation Lock
+
+This file tracks the foundation version and configuration for this project.
+
+```yaml
+foundation_repo: ai-team-foundation
+foundation_version: 2.0.0
+overlay: none
+initialized_at: YYYY-MM-DD
+last_upgrade_at: YYYY-MM-DD
+upgrade_policy: controlled
+language: typescript
+framework: node
+```
+
+## Fields
+
+| Field | Description |
+|-------|-------------|
+| `foundation_repo` | Name of the foundation repository |
+| `foundation_version` | Current foundation version |
+| `overlay` | Applied overlay (or "none") |
+| `initialized_at` | Date the project was created |
+| `last_upgrade_at` | Date of last foundation upgrade |
+| `upgrade_policy` | Upgrade policy (always "controlled") |
+| `language` | Primary programming language |
+| `framework` | Primary framework |
+
+## Usage
+
+This file is used by:
+- `plan_upgrade.sh` - To determine current version
+- `upgrade_foundation.sh` - To update version after upgrade
+- `validate_project_setup.sh` - To verify foundation initialization
+
+## Do Not Modify
+
+This file is managed by the foundation upgrade scripts. Manual modifications may cause issues with future upgrades.

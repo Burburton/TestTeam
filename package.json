@@ -1,7 +1,7 @@
 {
-  "name": "ai-team-template",
-  "version": "1.0.0",
-  "description": "AI-powered autonomous development team template - Reusable development foundation",
+  "name": "ai-team-foundation",
+  "version": "2.0.0",
+  "description": "AI-powered autonomous development team foundation - Reusable development scaffolding with controlled self-bootstrap capability",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -10,7 +10,14 @@
   "files": [
     ".ai-team/",
     "cli/",
-    "ai-team.config.yaml",
+    "scripts/",
+    ".foundation/",
+    "docs/",
+    "overlays/",
+    "tasks/_template/",
+    "VERSION",
+    "CHANGELOG.md",
+    "AGENTS.md",
     "README.md",
     "LICENSE"
   ],
@@ -25,23 +32,31 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build",
-    "validate": "node scripts/validate-foundation.cjs"
+    "validate": "node scripts/validate-foundation.cjs",
+    "validate:project": "bash scripts/validate_project_setup.sh",
+    "init": "bash scripts/init_project.sh",
+    "plan-upgrade": "bash scripts/plan_upgrade.sh",
+    "upgrade": "bash scripts/upgrade_foundation.sh",
+    "generate-docs": "bash scripts/generate_docs.sh"
   },
   "keywords": [
     "ai",
     "automation",
     "development",
     "template",
+    "foundation",
+    "bootstrap",
     "opencode",
     "github-actions",
     "autonomous",
-    "dev-tools"
+    "dev-tools",
+    "self-bootstrap"
   ],
   "author": "AI Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/ai-team-template.git"
+    "url": "https://github.com/your-org/ai-team-foundation.git"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
