@@ -1,0 +1,181 @@
+{
+  "$schema": "https://opencode.ai/schema.json",
+  "version": "1.0.0",
+  "project": {
+    "name": "Amazing Team",
+    "description": "AI-powered autonomous development team",
+    "language": "TypeScript",
+    "framework": "Node.js"
+  },
+  "agents": {
+    "architect": {
+      "description": "Analyzes requirements and designs solutions",
+      "model": "default",
+      "skills": ["repo-architecture-reader"],
+      "commands": ["/design"],
+      "memory": {
+        "read": [
+          "docs/",
+          "AGENTS.md",
+          ".opencode/memory/architect/",
+          ".opencode/memory/developer/",
+          "tasks/"
+        ],
+        "write": [
+          ".opencode/memory/architect/",
+          "tasks/{task_id}/analysis.md",
+          "tasks/{task_id}/design.md"
+        ]
+      }
+    },
+    "developer": {
+      "description": "Implements features and fixes bugs",
+      "model": "default",
+      "skills": ["test-first-feature-dev", "bugfix-playbook"],
+      "commands": ["/implement"],
+      "memory": {
+        "read": [
+          "docs/",
+          "AGENTS.md",
+          ".opencode/memory/architect/",
+          ".opencode/memory/developer/",
+          "tasks/{task_id}/"
+        ],
+        "write": [
+          ".opencode/memory/developer/",
+          "tasks/{task_id}/implementation.md",
+          "src/",
+          "tests/"
+        ]
+      }
+    },
+    "qa": {
+      "description": "Validates implementations and ensures quality",
+      "model": "default",
+      "skills": ["test-first-feature-dev"],
+      "commands": ["/test"],
+      "memory": {
+        "read": [
+          "docs/",
+          "AGENTS.md",
+          ".opencode/memory/architect/",
+          ".opencode/memory/qa/",
+          "tasks/{task_id}/"
+        ],
+        "write": [
+          ".opencode/memory/qa/",
+          "tasks/{task_id}/validation.md",
+          "tests/"
+        ]
+      }
+    },
+    "reviewer": {
+      "description": "Reviews code for quality and correctness",
+      "model": "default",
+      "skills": ["safe-refactor-checklist"],
+      "commands": ["/review"],
+      "memory": {
+        "read": [
+          "docs/",
+          "AGENTS.md",
+          ".opencode/memory/",
+          "tasks/{task_id}/"
+        ],
+        "write": [
+          ".opencode/memory/reviewer/",
+          "tasks/{task_id}/review.md"
+        ]
+      }
+    }
+  },
+  "skills": {
+    "repo-architecture-reader": {
+      "path": ".opencode/skills/repo-architecture-reader/skill.md"
+    },
+    "bugfix-playbook": {
+      "path": ".opencode/skills/bugfix-playbook/skill.md"
+    },
+    "test-first-feature-dev": {
+      "path": ".opencode/skills/test-first-feature-dev/skill.md"
+    },
+    "safe-refactor-checklist": {
+      "path": ".opencode/skills/safe-refactor-checklist/skill.md"
+    }
+  },
+  "commands": {
+    "/design": {
+      "path": ".opencode/commands/design.md",
+      "agent": "architect"
+    },
+    "/implement": {
+      "path": ".opencode/commands/implement.md",
+      "agent": "developer"
+    },
+    "/test": {
+      "path": ".opencode/commands/test.md",
+      "agent": "qa"
+    },
+    "/review": {
+      "path": ".opencode/commands/review.md",
+      "agent": "reviewer"
+    },
+    "/triage": {
+      "path": ".opencode/commands/triage.md",
+      "agent": "architect"
+    }
+  },
+  "workflows": {
+    "feature": ["architect", "developer", "qa", "reviewer"],
+    "bugfix": ["architect", "developer", "qa", "reviewer"],
+    "refactor": ["architect", "developer", "reviewer"],
+    "triage": ["architect"]
+  },
+  "memory": {
+    "global": {
+      "locations": ["docs/", "AGENTS.md"],
+      "writeRequiresApproval": true
+    },
+    "role": {
+      "base_path": ".opencode/memory",
+      "roles": {
+        "architect": {
+          "files": ["architecture_notes.md", "module_map.md", "design_rationale.md"]
+        },
+        "developer": {
+          "files": ["implementation_notes.md", "bug_investigation.md", "build_issues.md"]
+        },
+        "qa": {
+          "files": ["test_strategy.md", "regression_cases.md", "validation_notes.md"]
+        },
+        "reviewer": {
+          "files": ["review_notes.md", "quality_rules.md", "recurring_risks.md"]
+        }
+      }
+    },
+    "task": {
+      "base_path": "tasks",
+      "naming": "issue-{issue_id}",
+      "files": ["analysis.md", "design.md", "implementation.md", "validation.md", "review.md"],
+      "autoCreate": true,
+      "preserveAfterCompletion": true
+    }
+  },
+  "rules": {
+    "maxChangesPerCommit": 10,
+    "requireTests": true,
+    "requireReview": true,
+    "autoMerge": false,
+    "memoryIsolation": true
+  },
+  "integrations": {
+    "github": {
+      "enabled": true,
+      "autoLabel": true,
+      "autoAssign": true
+    },
+    "ci": {
+      "enabled": true,
+      "requirePassing": true
+    }
+  }
+}
