@@ -1,0 +1,22 @@
+name: python-backend
+description: Python backend service configuration
+version: 1.0.0
+compatible_foundation_versions:
+  - "2.0.0"
+
+overrides:
+  - .ai-team/agents/developer.md
+  - .github/workflows/ci.yml
+
+additions:
+  - .ai-team/skills/python-testing/
+  - docs/python-style.md
+
+language: python
+framework: fastapi
+package_manager: poetry
+
+environment:
+  python_version: "3.11"
+  linter: ruff
+  formatter: black

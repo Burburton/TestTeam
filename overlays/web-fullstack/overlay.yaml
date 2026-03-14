@@ -1,0 +1,26 @@
+name: web-fullstack
+description: Full-stack web application configuration
+version: 1.0.0
+compatible_foundation_versions:
+  - "2.0.0"
+
+overrides:
+  - .ai-team/agents/developer.md
+  - .ai-team/agents/qa.md
+  - .github/workflows/ci.yml
+
+additions:
+  - .ai-team/skills/frontend-testing/
+  - .ai-team/skills/backend-testing/
+  - docs/frontend-conventions.md
+  - docs/backend-conventions.md
+
+language: typescript
+framework: nextjs
+package_manager: npm
+
+environment:
+  node_version: "20"
+  frontend_framework: react
+  backend_framework: nextjs
+  css_framework: tailwind
