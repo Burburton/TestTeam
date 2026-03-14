@@ -203,38 +203,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.BAILIAN_API_KEY }}
         run: |
-          # Configure opencode to use Bailian provider
-          mkdir -p ~/.config/opencode
-          cat > ~/.config/opencode/opencode.json << 'CONFIG'
-          {
-            "provider": {
-              "bailian": {
-                "npm": "@ai-sdk/anthropic",
-                "name": "阿里百炼 Coding Plan",
-                "options": {
-                  "baseURL": "https://coding.dashscope.aliyuncs.com/apps/anthropic/v1"
-                },
-                "models": {
-                  "qwen3-coder-plus": { "name": "Qwen3 Coder Plus", "limit": { "context": 1000000, "output": 65536 } },
-                  "qwen3-coder-next": { "name": "Qwen3 Coder Next", "limit": { "context": 262144, "output": 65536 } },
-                  "qwen3.5-plus": { "name": "Qwen3.5 Plus", "limit": { "context": 1000000, "output": 65536 } },
-                  "qwen3-max-2026-01-23": { "name": "Qwen3 Max", "limit": { "context": 262144, "output": 32768 } },
-                  "MiniMax-M2.5": { "name": "MiniMax M2.5", "limit": { "context": 204800, "output": 131072 } },
-                  "glm-5": { "name": "GLM-5", "limit": { "context": 202752, "output": 16384 } },
-                  "glm-4.7": { "name": "GLM-4.7", "limit": { "context": 202752, "output": 16384 } },
-                  "kimi-k2.5": { "name": "Kimi K2.5", "limit": { "context": 262144, "output": 32768 } }
-                }
-              }
-            }
-          }
-          CONFIG
-          
           echo "🤖 Running OpenCode agent..."
           echo "Command: ${{ needs.detect-command.outputs.command }}"
           echo "Issue: #${{ needs.detect-command.outputs.issue_number }}"
           
-          # Run opencode with Bailian model (qwen3-coder-plus for coding tasks)
-          opencode run --model "bailian/qwen3-coder-plus" --agent "${{ needs.detect-command.outputs.agent }}" "${{ steps.prompt.outputs.prompt }}" || true
+          # Debug: show current directory and config
+          echo "Current directory: $(pwd)"
+          echo "opencode.jsonc exists: $(test -f opencode.jsonc && echo 'yes' || echo 'no')"
+          
+          # Run opencode with project config
+          timeout 300s opencode run --model "bailian/qwen3-coder-plus" "${{ steps.prompt.outputs.prompt }}" 2>&1 || echo "OpenCode completed or timed out"
+      
+      - name: Check for changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+            git status
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "No changes made by agent"
+          fi
       
       - name: Comment on issue
         if: needs.detect-command.outputs.issue_number != ''
