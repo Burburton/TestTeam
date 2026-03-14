@@ -224,7 +224,7 @@ jobs:
           echo ""
           
           # Run with 15 minute timeout
-          if timeout 900s opencode run --model "bailian/qwen3-coder-plus" "${{ steps.prompt.outputs.prompt }}" 2>&1; then
+          if timeout 900s opencode run --model "bailian/glm-5" "${{ steps.prompt.outputs.prompt }}" 2>&1; then
             echo ""
             echo "=== OpenCode completed successfully ==="
             echo "completed=true" >> $GITHUB_OUTPUT
