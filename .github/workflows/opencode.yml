@@ -201,7 +201,7 @@ jobs:
       - name: Run OpenCode Agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.BAILIAN_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.BAILIAN_API_KEY }}
         run: |
           # Configure opencode to use Bailian provider
           mkdir -p ~/.config/opencode
@@ -209,16 +209,20 @@ jobs:
           {
             "provider": {
               "bailian": {
-                "npm": "@ai-sdk/openai-compatible",
-                "name": "阿里百炼",
+                "npm": "@ai-sdk/anthropic",
+                "name": "阿里百炼 Coding Plan",
                 "options": {
-                  "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+                  "baseURL": "https://coding.dashscope.aliyuncs.com/apps/anthropic/v1"
                 },
                 "models": {
-                  "qwen-max": { "name": "Qwen Max" },
-                  "qwen-plus": { "name": "Qwen Plus" },
-                  "qwen-turbo": { "name": "Qwen Turbo" },
-                  "qwen-coder-plus": { "name": "Qwen Coder Plus" }
+                  "qwen3-coder-plus": { "name": "Qwen3 Coder Plus", "limit": { "context": 1000000, "output": 65536 } },
+                  "qwen3-coder-next": { "name": "Qwen3 Coder Next", "limit": { "context": 262144, "output": 65536 } },
+                  "qwen3.5-plus": { "name": "Qwen3.5 Plus", "limit": { "context": 1000000, "output": 65536 } },
+                  "qwen3-max-2026-01-23": { "name": "Qwen3 Max", "limit": { "context": 262144, "output": 32768 } },
+                  "MiniMax-M2.5": { "name": "MiniMax M2.5", "limit": { "context": 204800, "output": 131072 } },
+                  "glm-5": { "name": "GLM-5", "limit": { "context": 202752, "output": 16384 } },
+                  "glm-4.7": { "name": "GLM-4.7", "limit": { "context": 202752, "output": 16384 } },
+                  "kimi-k2.5": { "name": "Kimi K2.5", "limit": { "context": 262144, "output": 32768 } }
                 }
               }
             }
@@ -229,8 +233,8 @@ jobs:
           echo "Command: ${{ needs.detect-command.outputs.command }}"
           echo "Issue: #${{ needs.detect-command.outputs.issue_number }}"
           
-          # Run opencode with Bailian model
-          opencode run --model "bailian/qwen-max" --agent "${{ needs.detect-command.outputs.agent }}" "${{ steps.prompt.outputs.prompt }}" || true
+          # Run opencode with Bailian model (qwen3-coder-plus for coding tasks)
+          opencode run --model "bailian/qwen3-coder-plus" --agent "${{ needs.detect-command.outputs.agent }}" "${{ steps.prompt.outputs.prompt }}" || true
       
       - name: Comment on issue
         if: needs.detect-command.outputs.issue_number != ''

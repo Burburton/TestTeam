@@ -9,26 +9,43 @@
   },
   "provider": {
     "bailian": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "阿里百炼",
+      "npm": "@ai-sdk/anthropic",
+      "name": "阿里百炼 Coding Plan",
       "options": {
-        "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        "baseURL": "https://coding.dashscope.aliyuncs.com/apps/anthropic/v1"
       },
       "models": {
-        "qwen-max": {
-          "name": "Qwen Max"
+        "qwen3.5-plus": {
+          "name": "Qwen3.5 Plus",
+          "limit": { "context": 1000000, "output": 65536 }
         },
-        "qwen-plus": {
-          "name": "Qwen Plus"
+        "qwen3-max-2026-01-23": {
+          "name": "Qwen3 Max",
+          "limit": { "context": 262144, "output": 32768 }
         },
-        "qwen-turbo": {
-          "name": "Qwen Turbo"
+        "qwen3-coder-next": {
+          "name": "Qwen3 Coder Next",
+          "limit": { "context": 262144, "output": 65536 }
         },
-        "qwen-coder-plus": {
-          "name": "Qwen Coder Plus"
+        "qwen3-coder-plus": {
+          "name": "Qwen3 Coder Plus",
+          "limit": { "context": 1000000, "output": 65536 }
         },
-        "qwen-coder-turbo": {
-          "name": "Qwen Coder Turbo"
+        "MiniMax-M2.5": {
+          "name": "MiniMax M2.5",
+          "limit": { "context": 204800, "output": 131072 }
+        },
+        "glm-5": {
+          "name": "GLM-5",
+          "limit": { "context": 202752, "output": 16384 }
+        },
+        "glm-4.7": {
+          "name": "GLM-4.7",
+          "limit": { "context": 202752, "output": 16384 }
+        },
+        "kimi-k2.5": {
+          "name": "Kimi K2.5",
+          "limit": { "context": 262144, "output": 32768 }
         }
       }
     }
