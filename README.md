@@ -62,27 +62,6 @@ src/
 └── test/            # 测试配置
 ```
 
-## AI Team
-
-本项目使用 AI Team 进行开发迭代。
-
-### 可用命令
-
-| 命令 | 作用 |
-|------|------|
-| `/design` | 分析需求并设计方案 |
-| `/implement` | 实现设计好的方案 |
-| `/test` | 验证和测试实现 |
-| `/review` | 代码质量审查 |
-| `/triage` | 问题分类和调试 |
-| `/ci-analyze` | CI失败分析 |
-
-### 记忆系统
-
-- **全局记忆**: `docs/`, `AGENTS.md`
-- **角色记忆**: `.ai-team/memory/`
-- **任务记忆**: `tasks/`
-
 ## 游戏玩法
 
 1. 点击一个宝石选中它
@@ -90,6 +69,34 @@ src/
 3. 三个或更多相同颜色的宝石连成一线即可消除
 4. 消除后上方的宝石会下落，空位会被新宝石填充
 5. 达到目标分数即可过关
+
+## AI Team
+
+本项目使用 AI Team 进行开发迭代，具备以下特性：
+
+- 🤖 **七个 AI 角色**: Planner, Architect, Developer, QA, Reviewer, Triage, CI Analyst
+- 🧠 **分层记忆系统**: 全局记忆、角色记忆、任务记忆、失败库隔离
+- 📋 **任务系统**: task.yaml 任务清单，状态机驱动工作流
+- 🔀 **GitHub Issue 编排**: 大任务分解为子Issue，依赖追踪，逐个派发
+
+### 可用命令
+
+| 命令 | 作用 |
+|------|------|
+| `/triage` | Issue分类，确定是否需要分解 |
+| `/breakdown-issue` | 分解大任务为GitHub子Issue |
+| `/dispatch-next` | 派发下一个活跃子任务 |
+| `/design` | 分析需求并设计方案 |
+| `/implement` | 实现设计好的方案 |
+| `/test` | 验证和测试实现 |
+| `/review` | 代码质量审查 |
+| `/ci-analyze` | CI失败分析 |
+
+### 记忆系统
+
+- **全局记忆**: `docs/`, `AGENTS.md`
+- **角色记忆**: `.ai-team/memory/`
+- **任务记忆**: `tasks/`
 
 ## License
 
