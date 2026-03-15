@@ -1,5 +1,6 @@
 import { GameBoard } from './components/GameBoard'
 import { GameInfo } from './components/GameInfo'
+import { GameResultModal } from './components/GameResultModal'
 import { useGameState } from './hooks/useGameState'
 import './styles/App.css'
 
@@ -8,8 +9,11 @@ function App() {
     gameState,
     handleGemClick,
     resetGame,
-    isProcessing
-  } = useGameState(1)  // Start at level 1
+    goToNextLevel,
+    retryLevel,
+    isProcessing,
+    hasMoreLevels
+  } = useGameState(1)
 
   return (
     <div className="app">
@@ -43,6 +47,17 @@ function App() {
           </button>
         </div>
       </main>
+      
+      <GameResultModal
+        status={gameState.status}
+        level={gameState.level}
+        score={gameState.score}
+        targetScore={gameState.targetScore}
+        hasMoreLevels={hasMoreLevels}
+        onNextLevel={goToNextLevel}
+        onRetry={retryLevel}
+        onMainMenu={resetGame}
+      />
       
       <footer className="app-footer">
         <p>AI Team Development - Powered by React + TypeScript</p>
