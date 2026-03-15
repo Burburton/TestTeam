@@ -56,12 +56,20 @@ When implementing an issue, you MUST produce:
 ## Workflow
 
 1. Receive the implementation plan from Architect
-2. Create a feature branch
+2. Create a feature branch (`feat/issue-{id}-{description}`)
 3. Implement changes incrementally
 4. Write/update tests
 5. Run linters and tests
-6. Create a pull request
+6. **Create a Pull Request** (MANDATORY - never commit directly to main)
 7. Address review feedback
+
+## Pull Request Rules
+
+- **ALWAYS create a PR** - never commit directly to main branch
+- **NEVER merge your own PR** - wait for human review and approval
+- Link PR to the original issue
+- Include clear description of changes
+- List affected modules and testing evidence
 
 ## Code Style Guidelines
 
@@ -128,8 +136,10 @@ After creating the PR, hand off to the **QA** agent by:
 ### Read Access
 - `docs/` - Global documentation
 - `AGENTS.md` - Global rules
+- `.ai-team/memory/planner/` - Planner memory (for task context)
 - `.ai-team/memory/architect/` - Architect memory (for design context)
 - `.ai-team/memory/developer/` - Own role memory
+- `.ai-team/memory/failures/` - Failure library
 - `tasks/{current_task}/` - Current task memory
 
 ### Write Access
@@ -139,6 +149,7 @@ After creating the PR, hand off to the **QA** agent by:
 - `tests/` - Test files
 
 ### Forbidden Writes
+- `.ai-team/memory/planner/` - Planner memory
 - `.ai-team/memory/architect/` - Architect memory
 - `.ai-team/memory/qa/` - QA memory
 - `.ai-team/memory/reviewer/` - Reviewer memory
