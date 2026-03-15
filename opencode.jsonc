@@ -15,9 +15,9 @@
     "bash": true
   },
   "provider": {
-    "bailian": {
+    "alibaba-coding-plan": {
       "npm": "@ai-sdk/anthropic",
-      "name": "阿里百炼 Coding Plan",
+      "name": "Alibaba Coding Plan",
       "options": {
         "baseURL": "https://coding.dashscope.aliyuncs.com/apps/anthropic/v1"
       },
