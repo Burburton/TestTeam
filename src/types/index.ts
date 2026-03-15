@@ -10,7 +10,7 @@ export interface Gem {
 }
 
 export type GemType = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink'
-export type SpecialGemType = 'bomb' | 'lightning' | 'hypercube'
+export type SpecialGemType = 'bomb' | 'lightning' | 'hypercube' | 'rowBlaster' | 'columnBlaster' | 'diagonal'
 
 export interface Position {
   row: number
@@ -21,6 +21,8 @@ export interface Match {
   positions: Position[]
   type: GemType
   length: number
+  direction?: 'horizontal' | 'vertical'
+  shape?: 'line' | 'L' | 'T'
 }
 
 export type GameStatus = 'playing' | 'won' | 'lost'
@@ -87,5 +89,8 @@ export const GEM_EMOJIS: Record<GemType, string> = {
 export const SPECIAL_GEM_EMOJIS: Record<SpecialGemType, string> = {
   bomb: '💣',
   lightning: '⚡',
-  hypercube: '🔥'
+  hypercube: '🔥',
+  rowBlaster: '➡️',
+  columnBlaster: '⬇️',
+  diagonal: '✖️'
 }
