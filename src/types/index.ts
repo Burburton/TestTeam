@@ -23,6 +23,8 @@ export interface Match {
   length: number
 }
 
+export type GameStatus = 'playing' | 'won' | 'lost'
+
 export interface GameState {
   board: Gem[][]
   score: number
@@ -31,6 +33,7 @@ export interface GameState {
   targetScore: number
   isAnimating: boolean
   selectedGem: Position | null
+  status: GameStatus
 }
 
 export interface GameConfig {

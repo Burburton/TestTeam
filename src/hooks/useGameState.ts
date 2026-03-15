@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { Gem, GameState, Position } from '../types'
+import { Gem, GameState, Position, GameStatus } from '../types'
 import { createBoard, swapGems, areAdjacent } from '../game/board'
 import { findMatches, markMatchedGems, calculateScore, removeMatchedGems } from '../game/match'
 import { applyGravity, clearFallingState, delay } from '../game/fall'
@@ -19,7 +19,8 @@ export function useGameState(initialLevel: number = 1) {
     level: initialLevel,
     targetScore: currentLevelConfig.targetScore,
     isAnimating: false,
-    selectedGem: null
+    selectedGem: null,
+    status: 'playing' as GameStatus
   }))
   
   const processingRef = useRef(false)
@@ -120,25 +121,12 @@ export function useGameState(initialLevel: number = 1) {
       isAnimating: false
     }))
     
-    // Check for level completion after score update
-    if (newScore >= gameState.targetScore) { // Level up as soon as target score is met regardless of moves left
-      // Player completed the level
-      setTimeout(() => {
-        if (levelManagerRef.current.getNextLevel()) {
-          levelManagerRef.current.goToNextLevel()
-          const nextLevelConfig = levelManagerRef.current.getCurrentLevel()
-          
-          setGameState({
-            board: createBoard(nextLevelConfig),
-            score: 0, // Reset score for new level
-            moves: nextLevelConfig.movesLimit,
-            level: nextLevelConfig.level,
-            targetScore: nextLevelConfig.targetScore,
-            isAnimating: false,
-            selectedGem: null
-          })
-        }
-      }, ANIMATION_DELAY * 3)
+    // Check for win condition
+    if (newScore >= gameState.targetScore) {
+      setGameState(prev => ({ ...prev, status: 'won' }))
+    } else if (gameState.moves - 1 <= 0) {
+      // Check for lose condition (no moves left and target not reached)
+      setGameState(prev => ({ ...prev, status: 'lost' }))
     }
     
     processingRef.current = false
@@ -157,7 +145,38 @@ export function useGameState(initialLevel: number = 1) {
       level: startLevel,
       targetScore: currentLevelConfig.targetScore,
       isAnimating: false,
-      selectedGem: null
+      selectedGem: null,
+      status: 'playing'
+    })
+  }, [])
+  
+  const goToNextLevel = useCallback(() => {
+    if (levelManagerRef.current.goToNextLevel()) {
+      const nextLevelConfig = levelManagerRef.current.getCurrentLevel()
+      setGameState({
+        board: createBoard(nextLevelConfig),
+        score: 0,
+        moves: nextLevelConfig.movesLimit,
+        level: nextLevelConfig.level,
+        targetScore: nextLevelConfig.targetScore,
+        isAnimating: false,
+        selectedGem: null,
+        status: 'playing'
+      })
+    }
+  }, [])
+  
+  const retryLevel = useCallback(() => {
+    const currentLevelConfig = levelManagerRef.current.getCurrentLevel()
+    setGameState({
+      board: createBoard(currentLevelConfig),
+      score: 0,
+      moves: currentLevelConfig.movesLimit,
+      level: currentLevelConfig.level,
+      targetScore: currentLevelConfig.targetScore,
+      isAnimating: false,
+      selectedGem: null,
+      status: 'playing'
     })
   }, [])
   
@@ -165,6 +184,9 @@ export function useGameState(initialLevel: number = 1) {
     gameState,
     handleGemClick,
     resetGame,
-    isProcessing: processingRef.current
+    goToNextLevel,
+    retryLevel,
+    isProcessing: processingRef.current,
+    hasMoreLevels: !levelManagerRef.current.isLastLevel()
   }
 }
