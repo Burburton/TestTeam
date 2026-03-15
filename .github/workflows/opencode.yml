@@ -40,6 +40,7 @@ jobs:
       - name: Run opencode
         uses: anomalyco/opencode/github@latest
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ALIBABA_CODING_PLAN_API_KEY: ${{ secrets.BAILIAN_API_KEY }}
         with:
           model: alibaba-coding-plan/glm-5
