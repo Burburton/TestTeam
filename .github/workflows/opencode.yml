@@ -43,3 +43,4 @@ jobs:
           ALIBABA_CODING_PLAN_API_KEY: ${{ secrets.BAILIAN_API_KEY }}
         with:
           model: alibaba-coding-plan/glm-5
+          use_github_token: "true"
