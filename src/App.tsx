@@ -8,6 +8,7 @@ function App() {
   const {
     gameState,
     handleGemClick,
+    handleGemHover,
     resetGame,
     goToNextLevel,
     retryLevel,
@@ -34,7 +35,9 @@ function App() {
           board={gameState.board}
           selectedGem={gameState.selectedGem}
           onGemClick={handleGemClick}
+          onGemHover={handleGemHover}
           isProcessing={isProcessing}
+          blastPreviewPositions={gameState.blastPreviewPositions}
         />
         
         <div className="game-controls">

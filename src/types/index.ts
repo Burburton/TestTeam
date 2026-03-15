@@ -36,6 +36,8 @@ export interface GameState {
   isAnimating: boolean
   selectedGem: Position | null
   status: GameStatus
+  hoveredSpecialGem: Position | null
+  blastPreviewPositions: Position[]
 }
 
 export interface GameConfig {

@@ -241,3 +241,67 @@
     transform: rotate(360deg);
   }
 }
+
+.gem.blast-preview {
+  animation: blast-pulse 0.5s ease-in-out infinite alternate;
+  outline: 2px dashed rgba(255, 255, 255, 0.8);
+  outline-offset: -2px;
+}
+
+@keyframes blast-pulse {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.blast-range-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
+
+.gem:hover .blast-range-indicator,
+.gem.special:hover .blast-range-indicator {
+  opacity: 0.6;
+}
+
+.blast-icon {
+  width: 100%;
+  height: 100%;
+  color: white;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+}
+
+.gem.special-bomb .blast-range-indicator {
+  color: #ff6464;
+}
+
+.gem.special-lightning .blast-range-indicator,
+.gem.special-columnBlaster .blast-range-indicator {
+  color: #64c8ff;
+}
+
+.gem.special-hypercube .blast-range-indicator {
+  color: #ffd700;
+}
+
+.gem.special-rowBlaster .blast-range-indicator {
+  color: #ffa500;
+}
+
+.gem.special-diagonal .blast-range-indicator {
+  color: #ff00ff;
+}
