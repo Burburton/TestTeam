@@ -6,8 +6,8 @@
   "instructions": ["AGENTS.md"],
   "autoupdate": true,
   "permission": {
-    "edit": "ask",
-    "bash": "ask"
+    "edit": "allow",
+    "bash": "allow"
   },
   "tools": {
     "write": true,
