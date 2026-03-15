@@ -5,7 +5,7 @@ import { createBoard, swapGems, areAdjacent } from '../game/board'
 import { findMatches, markMatchedGems, calculateScore, removeMatchedGems, getMatchCenterPosition } from '../game/match'
 import { applyGravity, clearFallingState, delay } from '../game/fall'
 import { LevelManager } from '../utils/LevelManager'
-import { getSpecialGemType, createSpecialGem, handleSpecialGemEffect, shouldCreateSpecialGem } from '../utils/specialGems'
+import { getSpecialGemType, createSpecialGem, handleSpecialGemEffect, shouldCreateSpecialGem, getSpecialGemPositions } from '../utils/specialGems'
 
 const ANIMATION_DELAY = 300
 
@@ -21,7 +21,9 @@ export function useGameState(initialLevel: number = 1) {
     targetScore: currentLevelConfig.targetScore,
     isAnimating: false,
     selectedGem: null,
-    status: 'playing' as GameStatus
+    status: 'playing' as GameStatus,
+    hoveredSpecialGem: null,
+    blastPreviewPositions: []
   }))
   
   const processingRef = useRef(false)
@@ -238,7 +240,9 @@ export function useGameState(initialLevel: number = 1) {
       targetScore: currentLevelConfig.targetScore,
       isAnimating: false,
       selectedGem: null,
-      status: 'playing'
+      status: 'playing',
+      hoveredSpecialGem: null,
+      blastPreviewPositions: []
     })
   }, [])
   
@@ -253,7 +257,9 @@ export function useGameState(initialLevel: number = 1) {
         targetScore: nextLevelConfig.targetScore,
         isAnimating: false,
         selectedGem: null,
-        status: 'playing'
+        status: 'playing',
+        hoveredSpecialGem: null,
+        blastPreviewPositions: []
       })
     }
   }, [])
@@ -268,13 +274,44 @@ export function useGameState(initialLevel: number = 1) {
       targetScore: currentLevelConfig.targetScore,
       isAnimating: false,
       selectedGem: null,
-      status: 'playing'
+      status: 'playing',
+      hoveredSpecialGem: null,
+      blastPreviewPositions: []
     })
   }, [])
+  
+  const handleGemHover = useCallback((position: Position | null) => {
+    if (!position) {
+      setGameState(prev => ({
+        ...prev,
+        hoveredSpecialGem: null,
+        blastPreviewPositions: []
+      }))
+      return
+    }
+    
+    const gem = gameState.board[position.row]?.[position.col]
+    if (!gem?.special) {
+      setGameState(prev => ({
+        ...prev,
+        hoveredSpecialGem: null,
+        blastPreviewPositions: []
+      }))
+      return
+    }
+    
+    const blastPositions = getSpecialGemPositions(gem.special, gameState.board, position)
+    setGameState(prev => ({
+      ...prev,
+      hoveredSpecialGem: position,
+      blastPreviewPositions: blastPositions
+    }))
+  }, [gameState.board])
   
   return {
     gameState,
     handleGemClick,
+    handleGemHover,
     resetGame,
     goToNextLevel,
     retryLevel,
