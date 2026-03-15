@@ -1,4 +1,4 @@
-name: OpenCode Agent
+name: opencode
 
 on:
   issue_comment:
@@ -6,305 +6,40 @@ on:
   pull_request_review_comment:
     types: [created]
   issues:
-    types: [opened, labeled]
+    types: [opened]
   workflow_dispatch:
     inputs:
       issue_number:
         description: 'Issue number to process'
         required: false
       command:
-        description: 'Command to run (e.g., /implement, /design)'
+        description: 'Command to run'
         required: false
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
 jobs:
-  detect-command:
+  opencode:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.comment.body, ' /oc') ||
+      startsWith(github.event.comment.body, '/oc') ||
+      contains(github.event.comment.body, ' /opencode') ||
+      startsWith(github.event.comment.body, '/opencode') ||
+      github.event_name == 'issues'
     runs-on: ubuntu-latest
-    outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
-      command: ${{ steps.check.outputs.command }}
-      agent: ${{ steps.check.outputs.agent }}
-      issue_number: ${{ steps.check.outputs.issue_number }}
-      issue_body: ${{ steps.check.outputs.issue_body }}
-      issue_title: ${{ steps.check.outputs.issue_title }}
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
     steps:
-      - name: Check for OpenCode command
-        id: check
-        run: |
-          COMMENT="${{ github.event.comment.body }}"
-          ISSUE_BODY="${{ github.event.issue.body }}"
-          ISSUE_TITLE="${{ github.event.issue.title }}"
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          
-          # Manual workflow dispatch
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-            echo "command=${{ inputs.command || '/triage' }}" >> $GITHUB_OUTPUT
-            echo "agent=auto" >> $GITHUB_OUTPUT
-            echo "issue_number=${{ inputs.issue_number || '' }}" >> $GITHUB_OUTPUT
-            echo "issue_body=" >> $GITHUB_OUTPUT
-            echo "issue_title=" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          # Issue comment with /opencode command
-          if [[ "$COMMENT" == /opencode* ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-            CMD="${COMMENT#/opencode }"
-            if [[ -z "$CMD" ]]; then
-              CMD="auto-process"
-            fi
-            echo "command=$CMD" >> $GITHUB_OUTPUT
-            AGENT=$(echo "$COMMENT" | grep -oP '(?<=use )\w+(?= to)' || echo "auto")
-            echo "agent=$AGENT" >> $GITHUB_OUTPUT
-            echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
-            echo "issue_body<<EOF" >> $GITHUB_OUTPUT
-            echo "$ISSUE_BODY" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-            echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
-          # New issue opened
-          elif [[ "${{ github.event_name }}" == "issues" ]] && [[ "${{ github.event.action }}" == "opened" ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-            echo "command=auto-process" >> $GITHUB_OUTPUT
-            echo "agent=auto" >> $GITHUB_OUTPUT
-            echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
-            echo "issue_body<<EOF" >> $GITHUB_OUTPUT
-            echo "$ISSUE_BODY" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-            echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-          fi
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
-  run-agent:
-    needs: detect-command
-    if: needs.detect-command.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Install OpenCode
-        run: npm install -g opencode-ai
-        
-      - name: Configure Git
-        run: |
-          git config --global user.name "OpenCode Agent"
-          git config --global user.email "opencode@agent.ai"
-      
-      - name: Build prompt from issue
-        id: prompt
+      - name: Run opencode
+        uses: anomalyco/opencode/github@latest
         env:
-          ISSUE_NUMBER: ${{ needs.detect-command.outputs.issue_number }}
-          ISSUE_TITLE: ${{ needs.detect-command.outputs.issue_title }}
-          ISSUE_BODY: ${{ needs.detect-command.outputs.issue_body }}
-          COMMAND: ${{ needs.detect-command.outputs.command }}
-          AGENT: ${{ needs.detect-command.outputs.agent }}
-        run: |
-          # Build the prompt based on command type
-          case "$COMMAND" in
-            /triage|auto-process)
-              PROMPT="Analyze and triage this GitHub issue. Write your analysis to docs/issues/issue-${ISSUE_NUMBER}-analysis.md
-
-          Title: $ISSUE_TITLE
-
-          Body:
-          $ISSUE_BODY
-
-          Create a markdown file with:
-          1. Issue classification (feature/bug/tech-debt)
-          2. Priority (P0-P3)
-          3. Suggested labels
-          4. Brief analysis
-          5. Recommended next steps
-
-          Only create the analysis file, do not implement anything."
-              ;;
-            /design)
-              PROMPT="Create a design document for this feature request. Write to docs/designs/level-system-design.md
-
-          Title: $ISSUE_TITLE
-
-          Body:
-          $ISSUE_BODY
-
-          Create a design document with:
-          1. Overview - brief description of the feature
-          2. Data structures - TypeScript interfaces/types needed
-          3. Key components - React components to create/modify
-          4. Implementation steps - ordered list of tasks
-
-          Keep it focused. Only create the design document, do not implement the code."
-              ;;
-            /implement)
-              PROMPT="Implement the feature described in this issue. Start small with one component.
-
-          Title: $ISSUE_TITLE
-
-          Body:
-          $ISSUE_BODY
-
-          Steps:
-          1. First, read existing code to understand the structure
-          2. Implement ONE small piece of the feature
-          3. Run 'npm run lint' to verify code style
-          4. Run 'npm test' to verify tests pass
-
-          Focus on making one small, working change. Don't try to implement everything at once."
-              ;;
-            /test)
-              PROMPT="Run tests and validate the implementation.
-
-          Title: $ISSUE_TITLE
-
-          Body:
-          $ISSUE_BODY
-
-          Please:
-          1. Run 'npm test' and report results
-          2. Check for any lint errors with 'npm run lint'
-          3. Suggest additional tests if needed
-
-          Do not modify code, only analyze and report."
-              ;;
-            /ci-analyze)
-              PROMPT="Analyze recent CI failures.
-
-          Please:
-          1. Check the .github/workflows/ for CI configuration
-          2. Look at package.json for test/lint scripts
-          3. Identify common failure patterns
-          4. Suggest fixes
-
-          Write findings to docs/ci-analysis.md"
-              ;;
-            *)
-              PROMPT="Help with this issue. Focus on ONE small task.
-
-          Command: $COMMAND
-          Issue Title: $ISSUE_TITLE
-
-          Body:
-          $ISSUE_BODY
-
-          Start by understanding the codebase, then make one small improvement."
-              ;;
-          esac
-          
-          echo "prompt<<EOF" >> $GITHUB_OUTPUT
-          echo "$PROMPT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-      - name: Run OpenCode Agent
-        id: opencode
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.BAILIAN_API_KEY }}
-        run: |
-          echo "🤖 Running OpenCode agent..."
-          echo "Command: ${{ needs.detect-command.outputs.command }}"
-          echo "Issue: #${{ needs.detect-command.outputs.issue_number }}"
-          
-          echo "Current directory: $(pwd)"
-          echo "Config exists: $(test -f opencode.jsonc && echo 'yes' || echo 'no')"
-          
-          echo ""
-          echo "=== Starting OpenCode ==="
-          echo ""
-          
-          # Run with 15 minute timeout
-          if timeout 900s opencode run --model "bailian/glm-5" "${{ steps.prompt.outputs.prompt }}" 2>&1; then
-            echo ""
-            echo "=== OpenCode completed successfully ==="
-            echo "completed=true" >> $GITHUB_OUTPUT
-          else
-            EXIT_CODE=$?
-            if [ $EXIT_CODE -eq 124 ]; then
-              echo ""
-              echo "⚠️ OpenCode timed out after 15 minutes"
-              echo "timeout=true" >> $GITHUB_OUTPUT
-            else
-              echo ""
-              echo "❌ OpenCode exited with code $EXIT_CODE"
-              echo "error=true" >> $GITHUB_OUTPUT
-            fi
-          fi
-          
-          echo ""
-          echo "=== Git Status ==="
-          git status
-          
-          echo ""
-          echo "=== Recent Files Changed ==="
-          git diff --name-only HEAD~1 2>/dev/null || echo "No previous commit to compare"
-      
-      - name: Commit changes if any
-        run: |
-          if [[ -n $(git status --porcelain) ]]; then
-            echo "📝 Committing changes..."
-            git add -A
-            git commit -m "feat: AI agent changes for issue #${{ needs.detect-command.outputs.issue_number }}" || echo "No changes to commit"
-            git push
-            echo "changes=true" >> $GITHUB_OUTPUT
-          else
-            echo "No changes made by agent"
-            echo "changes=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Comment on issue
-        if: needs.detect-command.outputs.issue_number != ''
-        uses: actions/github-script@v7
+          ALIBABA_CODING_PLAN_API_KEY: ${{ secrets.BAILIAN_API_KEY }}
         with:
-          script: |
-            const issueNumber = '${{ needs.detect-command.outputs.issue_number }}';
-            const command = '${{ needs.detect-command.outputs.command }}';
-            const completed = '${{ steps.opencode.outputs.completed }}';
-            const timeout = '${{ steps.opencode.outputs.timeout }}';
-            const error = '${{ steps.opencode.outputs.error }}';
-            
-            let statusEmoji = '✅';
-            let statusText = 'completed successfully';
-            
-            if (timeout === 'true') {
-              statusEmoji = '⏱️';
-              statusText = 'timed out after 15 minutes - task may be too large';
-            } else if (error === 'true') {
-              statusEmoji = '❌';
-              statusText = 'encountered an error';
-            }
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              body: `## 🤖 OpenCode Agent ${statusEmoji}
-
-            **Command:** \`${command}\`
-            **Status:** ${statusText}
-            
-            📋 [View full log](${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-            
-            ### Available Commands
-            | Command | Purpose |
-            |---------|---------|
-            | \`/opencode /triage\` | Analyze and classify issue |
-            | \`/opencode /design\` | Create design document |
-            | \`/opencode /implement\` | Implement feature (one step at a time) |
-            | \`/opencode /test\` | Run tests and validate |
-            `
-            });
+          model: alibaba-coding-plan/glm-5
