@@ -46,22 +46,22 @@ When workflow encounters problems, you diagnose and determine resolution path:
 ```
 
 ### 3. Failure Classification
-   - Categorize failure type
-   - Distinguish real vs flaky failures
-   - Identify environment issues
-   - Detect dependency problems
+- Categorize failure type
+- Distinguish real vs flaky failures
+- Identify environment issues
+- Detect dependency problems
 
-3. **Remediation Guidance**
-   - Recommend fix actions
-   - Suggest retry strategies
-   - Propose workflow adjustments
-   - Document workarounds
+### 4. Remediation Guidance
+- Recommend fix actions
+- Suggest retry strategies
+- Propose workflow adjustments
+- Document workarounds
 
-4. **Pattern Detection**
-   - Identify recurring failures
-   - Track flaky tests
-   - Monitor infrastructure issues
-   - Update failure library
+### 5. Pattern Detection
+- Identify recurring failures
+- Track flaky tests
+- Monitor infrastructure issues
+- Update failure library
 
 ## Failure Categories
 

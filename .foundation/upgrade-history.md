@@ -28,7 +28,7 @@ This file records all foundation upgrades applied to this project.
 - **Files Skipped**: None
 - **Conflicts Found**: None
 - **Manual Decisions**: None
-- **Protected Files**: Skipped
+- **Protected Files**: None
 
 ---
 

@@ -9,13 +9,13 @@ Resume a previously blocked workflow after the blocker has been resolved.
 Comment on the blocked issue:
 
 ```
-/oc /resume
+/resume
 ```
 
 Or with additional context:
 
 ```
-/oc /resume
+/resume
 The permission issue has been fixed. Please continue from where you left off.
 ```
 
@@ -74,7 +74,7 @@ Please resolve the blocker first, then run `/resume` again.
 ## Example
 
 ```
-User: /oc /resume
+User: /resume
       Branch protection has been disabled temporarily.
 
 Planner:
