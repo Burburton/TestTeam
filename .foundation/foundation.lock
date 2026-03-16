@@ -4,13 +4,13 @@ This file tracks the foundation version and configuration for this project.
 
 ```yaml
 foundation_repo: ai-team-foundation
-foundation_version: 2.0.0
+foundation_version: 2.2.0
 overlay: none
-initialized_at: YYYY-MM-DD
-last_upgrade_at: YYYY-MM-DD
+initialized_at: 2026-03-14
+last_upgrade_at: 2026-03-16
 upgrade_policy: controlled
 language: typescript
-framework: node
+framework: react
 ```
 
 ## Fields

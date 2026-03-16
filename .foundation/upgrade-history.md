@@ -4,10 +4,31 @@ This file records all foundation upgrades applied to this project.
 
 ## Initial Setup
 
-- **Date**: YYYY-MM-DD
+- **Date**: 2026-03-14
 - **Foundation Version**: 2.0.0
 - **Overlay**: none
 - **Action**: Initial project creation
+
+---
+
+## Upgrade - 2026-03-16
+
+- **From Version**: 2.0.0
+- **To Version**: 2.2.0
+- **Action**: Controlled upgrade applied
+- **Files Updated**:
+  - VERSION
+  - .ai-team/agents/planner.md (workflow orchestration, /auto command)
+  - .ai-team/agents/ci-analyst.md (blocker diagnosis)
+  - .ai-team/agents/developer.md (git identity, PR rules)
+  - .opencode/agents/planner.md (/auto command table)
+  - .opencode/agents/developer.md (updated permissions)
+  - .opencode/commands/resume.md (new)
+  - .foundation/foundation.lock
+- **Files Skipped**: None
+- **Conflicts Found**: None
+- **Manual Decisions**: None
+- **Protected Files**: Skipped
 
 ---
 
