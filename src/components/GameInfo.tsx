@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import '../styles/GameInfo.css'
 
 interface GameInfoProps {
   score: number
