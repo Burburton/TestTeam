@@ -29,6 +29,7 @@ function App() {
           moves={gameState.moves}
           targetScore={gameState.targetScore}
           level={gameState.level}
+          combo={gameState.combo}
         />
         
         <GameBoard 

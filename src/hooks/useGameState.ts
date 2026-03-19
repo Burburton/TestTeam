@@ -23,7 +23,9 @@ export function useGameState(initialLevel: number = 1) {
     selectedGem: null,
     status: 'playing' as GameStatus,
     hoveredSpecialGem: null,
-    blastPreviewPositions: []
+    blastPreviewPositions: [],
+    combo: 0,
+    lastScoreGain: 0
   }))
   
   const processingRef = useRef(false)
@@ -51,13 +53,15 @@ export function useGameState(initialLevel: number = 1) {
     return newBoard
   }, [])
   
-  const processMatches = useCallback(async (board: Gem[][]): Promise<{ newBoard: Gem[][], additionalScore: number }> => {
+  const processMatches = useCallback(async (board: Gem[][], currentCombo: number = 0): Promise<{ newBoard: Gem[][], additionalScore: number, combo: number }> => {
     let currentBoard = board
     let totalScore = 0
+    let combo = currentCombo
     
     let matches = findMatches(currentBoard)
     
     while (matches.length > 0) {
+      combo++
       for (const match of matches) {
         const specialType = getSpecialGemType(match)
         
@@ -114,7 +118,7 @@ export function useGameState(initialLevel: number = 1) {
       matches = findMatches(currentBoard)
     }
     
-    return { newBoard: currentBoard, additionalScore: totalScore }
+    return { newBoard: currentBoard, additionalScore: totalScore, combo }
   }, [createSpecialGemAtPosition])
   
   const handleGemClick = useCallback(async (position: Position) => {
@@ -163,7 +167,7 @@ export function useGameState(initialLevel: number = 1) {
       
       processedBoard = clearFallingState(processedBoard)
       
-      const { newBoard: finalBoard, additionalScore } = await processMatches(processedBoard)
+      const { newBoard: finalBoard, additionalScore, combo: newCombo } = await processMatches(processedBoard, 1)
       const newScore = gameState.score + specialScore + additionalScore
       
       setGameState(prev => ({
@@ -172,7 +176,9 @@ export function useGameState(initialLevel: number = 1) {
         score: newScore,
         isAnimating: false,
         selectedGem: null,
-        moves: prev.moves - 1
+        moves: prev.moves - 1,
+        combo: newCombo,
+        lastScoreGain: specialScore + additionalScore
       }))
       
       if (newScore >= gameState.targetScore) {
@@ -206,7 +212,7 @@ export function useGameState(initialLevel: number = 1) {
     
     await delay(ANIMATION_DELAY)
     
-    const { newBoard: processedBoard, additionalScore } = await processMatches(newBoard)
+    const { newBoard: processedBoard, additionalScore, combo: newCombo } = await processMatches(newBoard, 1)
     
     const newScore = gameState.score + additionalScore
     
@@ -214,7 +220,9 @@ export function useGameState(initialLevel: number = 1) {
       ...prev,
       board: processedBoard,
       score: newScore,
-      isAnimating: false
+      isAnimating: false,
+      combo: newCombo,
+      lastScoreGain: additionalScore
     }))
     
     if (newScore >= gameState.targetScore) {
@@ -242,7 +250,9 @@ export function useGameState(initialLevel: number = 1) {
       selectedGem: null,
       status: 'playing',
       hoveredSpecialGem: null,
-      blastPreviewPositions: []
+      blastPreviewPositions: [],
+      combo: 0,
+      lastScoreGain: 0
     })
   }, [])
   
@@ -259,7 +269,9 @@ export function useGameState(initialLevel: number = 1) {
         selectedGem: null,
         status: 'playing',
         hoveredSpecialGem: null,
-        blastPreviewPositions: []
+        blastPreviewPositions: [],
+        combo: 0,
+        lastScoreGain: 0
       })
     }
   }, [])
@@ -276,7 +288,9 @@ export function useGameState(initialLevel: number = 1) {
       selectedGem: null,
       status: 'playing',
       hoveredSpecialGem: null,
-      blastPreviewPositions: []
+      blastPreviewPositions: [],
+      combo: 0,
+      lastScoreGain: 0
     })
   }, [])
   
