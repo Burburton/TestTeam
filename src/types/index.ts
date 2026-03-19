@@ -38,6 +38,8 @@ export interface GameState {
   status: GameStatus
   hoveredSpecialGem: Position | null
   blastPreviewPositions: Position[]
+  combo: number
+  lastScoreGain: number
 }
 
 export interface GameConfig {
