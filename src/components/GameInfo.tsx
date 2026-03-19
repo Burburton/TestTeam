@@ -19,8 +19,11 @@ function calculateStars(score: number, targetScore: number): number {
 export function GameInfo({ score, moves, targetScore, level, combo }: GameInfoProps) {
   const [scoreAnimate, setScoreAnimate] = useState(false)
   const [comboAnimate, setComboAnimate] = useState(false)
+  const [progressAnimate, setProgressAnimate] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
   const prevScoreRef = useRef(score)
   const prevComboRef = useRef(combo)
+  const prevProgressRef = useRef(0)
   const progress = Math.min((score / targetScore) * 100, 100)
   const levelName = level <= 5 ? ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'][level - 1] : 'Max Level'
   const stars = calculateStars(score, targetScore)
@@ -42,6 +45,24 @@ export function GameInfo({ score, moves, targetScore, level, combo }: GameInfoPr
       return () => clearTimeout(timer)
     }
   }, [combo])
+
+  useEffect(() => {
+    const prevProgress = prevProgressRef.current
+    if (progress !== prevProgress) {
+      setProgressAnimate(true)
+      prevProgressRef.current = progress
+      const timer = setTimeout(() => setProgressAnimate(false), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [progress])
+
+  useEffect(() => {
+    if (progress >= 100 && !isComplete) {
+      setIsComplete(true)
+    } else if (progress < 100) {
+      setIsComplete(false)
+    }
+  }, [progress, isComplete])
 
   return (
     <div className="game-info">
@@ -79,9 +100,9 @@ export function GameInfo({ score, moves, targetScore, level, combo }: GameInfoPr
             ))}
           </span>
         </div>
-        <div className="progress-bar">
+        <div className={`progress-bar ${isComplete ? 'celebrating' : ''}`}>
           <div 
-            className="progress-fill" 
+            className={`progress-fill ${progressAnimate ? 'progress-animate' : ''} ${isComplete ? 'complete' : ''}`}
             style={{ width: `${progress}%` }}
           />
         </div>
