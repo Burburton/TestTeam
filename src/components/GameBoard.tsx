@@ -1,5 +1,6 @@
-import { Gem, Position } from '../types'
+import { Gem, Position, ScorePopup } from '../types'
 import { GemComponent } from './Gem'
+import { FloatingScorePopup } from './FloatingScorePopup'
 import '../styles/GameBoard.css'
 
 interface GameBoardProps {
@@ -9,6 +10,7 @@ interface GameBoardProps {
   onGemHover: (position: Position | null) => void
   isProcessing: boolean
   blastPreviewPositions: Position[]
+  scorePopups: ScorePopup[]
 }
 
 export function GameBoard({ 
@@ -17,7 +19,8 @@ export function GameBoard({
   onGemClick, 
   onGemHover, 
   isProcessing,
-  blastPreviewPositions 
+  blastPreviewPositions,
+  scorePopups
 }: GameBoardProps) {
   const isBlastPreview = (row: number, col: number) => {
     return blastPreviewPositions.some(pos => pos.row === row && pos.col === col)
@@ -39,6 +42,9 @@ export function GameBoard({
             />
           ))}
         </div>
+      ))}
+      {scorePopups.map(popup => (
+        <FloatingScorePopup key={popup.id} popup={popup} />
       ))}
     </div>
   )

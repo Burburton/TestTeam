@@ -1,0 +1,29 @@
+.floating-score-popup {
+  position: absolute;
+  pointer-events: none;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 
+    0 0 10px rgba(255, 215, 0, 0.8),
+    2px 2px 4px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  animation: float-up 1s ease-out forwards;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -70%) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -150%) scale(1);
+  }
+}

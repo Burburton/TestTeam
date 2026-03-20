@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import type { MouseEvent } from 'react'
-import { Gem, GameState, Position, GameStatus, Match, SpecialGemType } from '../types'
+import { Gem, GameState, Position, GameStatus, Match, SpecialGemType, ScorePopup } from '../types'
 import { createBoard, swapGems, areAdjacent } from '../game/board'
 import { findMatches, markMatchedGems, calculateScore, removeMatchedGems, getMatchCenterPosition } from '../game/match'
 import { applyGravity, clearFallingState, delay } from '../game/fall'
@@ -8,9 +8,11 @@ import { LevelManager } from '../utils/LevelManager'
 import { getSpecialGemType, createSpecialGem, handleSpecialGemEffect, shouldCreateSpecialGem, getSpecialGemPositions } from '../utils/specialGems'
 
 const ANIMATION_DELAY = 300
+const POPUP_DURATION = 1000
 
 export function useGameState(initialLevel: number = 1) {
   const levelManagerRef = useRef<LevelManager>(new LevelManager(initialLevel))
+  const popupIdRef = useRef(0)
   const currentLevelConfig = levelManagerRef.current.getCurrentLevel()
   
   const [gameState, setGameState] = useState<GameState>(() => ({
@@ -25,10 +27,38 @@ export function useGameState(initialLevel: number = 1) {
     hoveredSpecialGem: null,
     blastPreviewPositions: [],
     combo: 0,
-    lastScoreGain: 0
+    lastScoreGain: 0,
+    scorePopups: []
   }))
   
   const processingRef = useRef(false)
+  
+  const addScorePopups = useCallback((matches: Match[], score: number) => {
+    if (score <= 0 || matches.length === 0) return
+    
+    const newPopups: ScorePopup[] = matches.map(match => {
+      const centerPos = getMatchCenterPosition(match)
+      return {
+        id: `popup-${popupIdRef.current++}`,
+        score: Math.round(score / matches.length),
+        row: centerPos.row,
+        col: centerPos.col
+      }
+    })
+    
+    setGameState(prev => ({
+      ...prev,
+      scorePopups: [...prev.scorePopups, ...newPopups]
+    }))
+    
+    setTimeout(() => {
+      const popupIds = newPopups.map(p => p.id)
+      setGameState(prev => ({
+        ...prev,
+        scorePopups: prev.scorePopups.filter(p => !popupIds.includes(p.id))
+      }))
+    }, POPUP_DURATION)
+  }, [])
   
   const createSpecialGemAtPosition = useCallback((board: Gem[][], match: Match, specialType: SpecialGemType): Gem[][] => {
     const newBoard = board.map(row => row.map(gem => ({ ...gem })))
@@ -104,6 +134,9 @@ export function useGameState(initialLevel: number = 1) {
       
       await delay(ANIMATION_DELAY)
       
+      const roundScore = calculateScore(matches)
+      addScorePopups(matches, roundScore)
+      
       const { newBoard: tempBoard } = removeMatchedGems(currentBoard)
       currentBoard = [...tempBoard]
       
@@ -113,13 +146,13 @@ export function useGameState(initialLevel: number = 1) {
       await delay(ANIMATION_DELAY)
       
       currentBoard = clearFallingState(currentBoard)
-      totalScore += calculateScore(matches)
+      totalScore += roundScore
       
       matches = findMatches(currentBoard)
     }
     
     return { newBoard: currentBoard, additionalScore: totalScore, combo }
-  }, [createSpecialGemAtPosition])
+  }, [createSpecialGemAtPosition, addScorePopups])
   
   const handleGemClick = useCallback(async (position: Position) => {
     if (processingRef.current || gameState.isAnimating || gameState.moves <= 0) {
@@ -152,8 +185,30 @@ export function useGameState(initialLevel: number = 1) {
       let processedBoard = specialResult.board
       const specialScore = specialResult.scoreBonus
       
+      if (specialScore > 0) {
+        const popup: ScorePopup = {
+          id: `popup-${popupIdRef.current++}`,
+          score: specialScore,
+          row: position.row,
+          col: position.col
+        }
+        setGameState(prev => ({
+          ...prev,
+          board: processedBoard,
+          isAnimating: true,
+          scorePopups: [...prev.scorePopups, popup]
+        }))
+        setTimeout(() => {
+          setGameState(prev => ({
+            ...prev,
+            scorePopups: prev.scorePopups.filter(p => p.id !== popup.id)
+          }))
+        }, POPUP_DURATION)
+      } else {
+        setGameState(prev => ({ ...prev, board: processedBoard, isAnimating: true }))
+      }
+      
       processedBoard = markMatchedGems(processedBoard, [{ positions: [position], type: swappedGem.type, length: 1 }])
-      setGameState(prev => ({ ...prev, board: processedBoard, isAnimating: true }))
       
       await delay(ANIMATION_DELAY)
       
@@ -252,7 +307,8 @@ export function useGameState(initialLevel: number = 1) {
       hoveredSpecialGem: null,
       blastPreviewPositions: [],
       combo: 0,
-      lastScoreGain: 0
+      lastScoreGain: 0,
+      scorePopups: []
     })
   }, [])
   
@@ -271,7 +327,8 @@ export function useGameState(initialLevel: number = 1) {
         hoveredSpecialGem: null,
         blastPreviewPositions: [],
         combo: 0,
-        lastScoreGain: 0
+        lastScoreGain: 0,
+        scorePopups: []
       })
     }
   }, [])
@@ -290,7 +347,8 @@ export function useGameState(initialLevel: number = 1) {
       hoveredSpecialGem: null,
       blastPreviewPositions: [],
       combo: 0,
-      lastScoreGain: 0
+      lastScoreGain: 0,
+      scorePopups: []
     })
   }, [])
   
