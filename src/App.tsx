@@ -39,6 +39,7 @@ function App() {
           onGemHover={handleGemHover}
           isProcessing={isProcessing}
           blastPreviewPositions={gameState.blastPreviewPositions}
+          scorePopups={gameState.scorePopups}
         />
         
         <div className="game-controls">

@@ -40,6 +40,7 @@ export interface GameState {
   blastPreviewPositions: Position[]
   combo: number
   lastScoreGain: number
+  scorePopups: ScorePopup[]
 }
 
 export interface GameConfig {
@@ -97,4 +98,11 @@ export const SPECIAL_GEM_EMOJIS: Record<SpecialGemType, string> = {
   rowBlaster: '➡️',
   columnBlaster: '⬇️',
   diagonal: '✖️'
+}
+
+export interface ScorePopup {
+  id: string
+  score: number
+  row: number
+  col: number
 }
