@@ -154,3 +154,59 @@
 .btn-menu:hover {
   background: #e5e7eb;
 }
+
+.star-result-container {
+  text-align: center;
+  margin: 20px 0;
+  padding: 15px;
+  background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
+  border-radius: 12px;
+}
+
+.star-result {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.result-star {
+  font-size: 3rem;
+  color: #d1d5db;
+  transition: all 0.3s ease;
+  opacity: 0.5;
+}
+
+.result-star.filled {
+  color: #fbbf24;
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+  opacity: 1;
+}
+
+.result-star.animate {
+  animation: star-pop 0.5s ease-out;
+}
+
+@keyframes star-pop {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.4) rotate(10deg);
+  }
+  70% {
+    transform: scale(0.9) rotate(-5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.star-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-top: 5px;
+}
