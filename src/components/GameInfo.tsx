@@ -7,10 +7,11 @@ interface GameInfoProps {
   moves: number
   targetScore: number
   level: number
+  levelName: string
   combo: number
 }
 
-export function GameInfo({ score, moves, targetScore, level, combo }: GameInfoProps) {
+export function GameInfo({ score, moves, targetScore, level, levelName, combo }: GameInfoProps) {
   const [scoreAnimate, setScoreAnimate] = useState(false)
   const [comboAnimate, setComboAnimate] = useState(false)
   const [comboFadeOut, setComboFadeOut] = useState(false)
@@ -21,7 +22,6 @@ export function GameInfo({ score, moves, targetScore, level, combo }: GameInfoPr
   const prevComboRef = useRef(combo)
   const prevProgressRef = useRef(0)
   const progress = Math.min((score / targetScore) * 100, 100)
-  const levelName = level <= 5 ? ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'][level - 1] : 'Max Level'
   const stars = calculateStars(score, targetScore)
   
   useEffect(() => {

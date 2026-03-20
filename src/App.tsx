@@ -13,8 +13,11 @@ function App() {
     goToNextLevel,
     retryLevel,
     isProcessing,
-    hasMoreLevels
+    hasMoreLevels,
+    getLevelName
   } = useGameState(1)
+  
+  const levelName = getLevelName(gameState.level)
 
   return (
     <div className="app">
@@ -29,6 +32,7 @@ function App() {
           moves={gameState.moves}
           targetScore={gameState.targetScore}
           level={gameState.level}
+          levelName={levelName}
           combo={gameState.combo}
         />
         
