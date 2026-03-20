@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { MouseEvent } from 'react'
 import { Gem, GameState, Position, GameStatus, Match, SpecialGemType, ScorePopup } from '../types'
 import { createBoard, swapGems, areAdjacent } from '../game/board'
@@ -6,32 +6,57 @@ import { findMatches, markMatchedGems, calculateScore, removeMatchedGems, getMat
 import { applyGravity, clearFallingState, delay } from '../game/fall'
 import { LevelManager } from '../utils/LevelManager'
 import { getSpecialGemType, createSpecialGem, handleSpecialGemEffect, shouldCreateSpecialGem, getSpecialGemPositions } from '../utils/specialGems'
+import { calculateStars } from '../utils/starRating'
 
 const ANIMATION_DELAY = 300
 const POPUP_DURATION = 1000
 
-export function useGameState(initialLevel: number = 1) {
-  const levelManagerRef = useRef<LevelManager>(new LevelManager(initialLevel))
+export function useGameState(initialLevel?: number) {
+  const levelManagerRef = useRef<LevelManager | null>(null)
   const popupIdRef = useRef(0)
-  const currentLevelConfig = levelManagerRef.current.getCurrentLevel()
   
-  const [gameState, setGameState] = useState<GameState>(() => ({
-    board: createBoard(currentLevelConfig),
-    score: 0,
-    moves: currentLevelConfig.movesLimit,
-    level: initialLevel,
-    targetScore: currentLevelConfig.targetScore,
-    isAnimating: false,
-    selectedGem: null,
-    status: 'playing' as GameStatus,
-    hoveredSpecialGem: null,
-    blastPreviewPositions: [],
-    combo: 0,
-    lastScoreGain: 0,
-    scorePopups: []
-  }))
+  const getInitialLevel = useCallback((): number => {
+    if (initialLevel !== undefined) {
+      return initialLevel
+    }
+    if (levelManagerRef.current) {
+      return levelManagerRef.current.getProgress().currentLevel
+    }
+    return 1
+  }, [initialLevel])
+  
+  const initializeGameState = useCallback((level: number): GameState => {
+    const config = levelManagerRef.current!.getLevelConfig(level)
+    return {
+      board: createBoard(config),
+      score: 0,
+      moves: config.movesLimit,
+      level: level,
+      targetScore: config.targetScore,
+      isAnimating: false,
+      selectedGem: null,
+      status: 'playing' as GameStatus,
+      hoveredSpecialGem: null,
+      blastPreviewPositions: [],
+      combo: 0,
+      lastScoreGain: 0,
+      scorePopups: []
+    }
+  }, [])
+  
+  const [gameState, setGameState] = useState<GameState>(() => {
+    levelManagerRef.current = new LevelManager()
+    const level = getInitialLevel()
+    return initializeGameState(level)
+  })
   
   const processingRef = useRef(false)
+  
+  useEffect(() => {
+    if (!levelManagerRef.current) {
+      levelManagerRef.current = new LevelManager(initialLevel)
+    }
+  }, [initialLevel])
   
   const addScorePopups = useCallback((matches: Match[], score: number) => {
     if (score <= 0 || matches.length === 0) return
@@ -196,7 +221,7 @@ export function useGameState(initialLevel: number = 1) {
           ...prev,
           board: processedBoard,
           isAnimating: true,
-          scorePopups: [...prev.scorePopups, popup]
+          scorePopups: [...prev.scorePopups, ...[popup]]
         }))
         setTimeout(() => {
           setGameState(prev => ({
@@ -237,6 +262,9 @@ export function useGameState(initialLevel: number = 1) {
       }))
       
       if (newScore >= gameState.targetScore) {
+        const stars = calculateStars(newScore, gameState.targetScore)
+        levelManagerRef.current?.updateProgress(newScore, stars)
+        levelManagerRef.current?.unlockNextLevel()
         setGameState(prev => ({ ...prev, status: 'won' }))
       } else if (gameState.moves - 1 <= 0) {
         setGameState(prev => ({ ...prev, status: 'lost' }))
@@ -281,6 +309,9 @@ export function useGameState(initialLevel: number = 1) {
     }))
     
     if (newScore >= gameState.targetScore) {
+      const stars = calculateStars(newScore, gameState.targetScore)
+      levelManagerRef.current?.updateProgress(newScore, stars)
+      levelManagerRef.current?.unlockNextLevel()
       setGameState(prev => ({ ...prev, status: 'won' }))
     } else if (gameState.moves - 1 <= 0) {
       setGameState(prev => ({ ...prev, status: 'lost' }))
@@ -290,36 +321,30 @@ export function useGameState(initialLevel: number = 1) {
   }, [gameState, processMatches])
 
   const resetGame = useCallback((_?: MouseEvent<HTMLButtonElement>) => {
-    const startLevel = 1;
-    levelManagerRef.current.goToLevel(startLevel)
-    const currentLevelConfig = levelManagerRef.current.getCurrentLevel()
-
+    const progress = levelManagerRef.current?.getProgress()
+    const startLevel = progress?.highestLevel || 1
+    levelManagerRef.current?.setCurrentLevel(startLevel)
+    levelManagerRef.current?.goToLevel(startLevel)
+    
     processingRef.current = false
-    setGameState({
-      board: createBoard(currentLevelConfig),
-      score: 0,
-      moves: currentLevelConfig.movesLimit,
-      level: startLevel,
-      targetScore: currentLevelConfig.targetScore,
-      isAnimating: false,
-      selectedGem: null,
-      status: 'playing',
-      hoveredSpecialGem: null,
-      blastPreviewPositions: [],
-      combo: 0,
-      lastScoreGain: 0,
-      scorePopups: []
-    })
-  }, [])
+    setGameState(initializeGameState(startLevel))
+  }, [initializeGameState])
   
   const goToNextLevel = useCallback(() => {
-    if (levelManagerRef.current.goToNextLevel()) {
-      const nextLevelConfig = levelManagerRef.current.getCurrentLevel()
+    const currentLevel = gameState.level
+    const nextLevel = currentLevel + 1
+    
+    levelManagerRef.current?.setCurrentLevel(nextLevel)
+    levelManagerRef.current?.goToLevel(nextLevel)
+    
+    const nextLevelConfig = levelManagerRef.current?.getLevelConfig(nextLevel)
+    if (nextLevelConfig) {
+      processingRef.current = false
       setGameState({
         board: createBoard(nextLevelConfig),
         score: 0,
         moves: nextLevelConfig.movesLimit,
-        level: nextLevelConfig.level,
+        level: nextLevel,
         targetScore: nextLevelConfig.targetScore,
         isAnimating: false,
         selectedGem: null,
@@ -331,26 +356,30 @@ export function useGameState(initialLevel: number = 1) {
         scorePopups: []
       })
     }
-  }, [])
+  }, [gameState.level])
   
   const retryLevel = useCallback(() => {
-    const currentLevelConfig = levelManagerRef.current.getCurrentLevel()
-    setGameState({
-      board: createBoard(currentLevelConfig),
-      score: 0,
-      moves: currentLevelConfig.movesLimit,
-      level: currentLevelConfig.level,
-      targetScore: currentLevelConfig.targetScore,
-      isAnimating: false,
-      selectedGem: null,
-      status: 'playing',
-      hoveredSpecialGem: null,
-      blastPreviewPositions: [],
-      combo: 0,
-      lastScoreGain: 0,
-      scorePopups: []
-    })
-  }, [])
+    const currentLevel = gameState.level
+    const currentLevelConfig = levelManagerRef.current?.getLevelConfig(currentLevel)
+    if (currentLevelConfig) {
+      processingRef.current = false
+      setGameState({
+        board: createBoard(currentLevelConfig),
+        score: 0,
+        moves: currentLevelConfig.movesLimit,
+        level: currentLevel,
+        targetScore: currentLevelConfig.targetScore,
+        isAnimating: false,
+        selectedGem: null,
+        status: 'playing',
+        hoveredSpecialGem: null,
+        blastPreviewPositions: [],
+        combo: 0,
+        lastScoreGain: 0,
+        scorePopups: []
+      })
+    }
+  }, [gameState.level])
   
   const handleGemHover = useCallback((position: Position | null) => {
     if (!position) {
@@ -380,6 +409,20 @@ export function useGameState(initialLevel: number = 1) {
     }))
   }, [gameState.board])
   
+  const getProgress = useCallback(() => {
+    return levelManagerRef.current?.getProgress() || {
+      currentLevel: 1,
+      highestLevel: 1,
+      levelScores: {},
+      levelStars: {},
+      totalGamesPlayed: 0
+    }
+  }, [])
+  
+  const getLevelName = useCallback((level: number): string => {
+    return levelManagerRef.current?.getLevelConfig(level)?.name || `Level ${level}`
+  }, [])
+  
   return {
     gameState,
     handleGemClick,
@@ -388,6 +431,8 @@ export function useGameState(initialLevel: number = 1) {
     goToNextLevel,
     retryLevel,
     isProcessing: processingRef.current,
-    hasMoreLevels: !levelManagerRef.current.isLastLevel()
+    hasMoreLevels: true,
+    getProgress,
+    getLevelName
   }
 }
