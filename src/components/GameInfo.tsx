@@ -19,6 +19,8 @@ function calculateStars(score: number, targetScore: number): number {
 export function GameInfo({ score, moves, targetScore, level, combo }: GameInfoProps) {
   const [scoreAnimate, setScoreAnimate] = useState(false)
   const [comboAnimate, setComboAnimate] = useState(false)
+  const [comboFadeOut, setComboFadeOut] = useState(false)
+  const [displayCombo, setDisplayCombo] = useState(0)
   const [progressAnimate, setProgressAnimate] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const prevScoreRef = useRef(score)
@@ -38,11 +40,26 @@ export function GameInfo({ score, moves, targetScore, level, combo }: GameInfoPr
   }, [score])
 
   useEffect(() => {
-    if (combo !== prevComboRef.current && combo > 1) {
+    const prevCombo = prevComboRef.current
+    
+    if (combo > 1 && combo !== prevCombo) {
+      setComboFadeOut(false)
+      setDisplayCombo(combo)
       setComboAnimate(true)
       prevComboRef.current = combo
       const timer = setTimeout(() => setComboAnimate(false), 500)
       return () => clearTimeout(timer)
+    } else if (prevCombo > 1 && combo <= 1) {
+      setComboAnimate(false)
+      setComboFadeOut(true)
+      prevComboRef.current = combo
+      const timer = setTimeout(() => {
+        setComboFadeOut(false)
+        setDisplayCombo(0)
+      }, 600)
+      return () => clearTimeout(timer)
+    } else if (combo <= 1 && prevCombo <= 1) {
+      setDisplayCombo(0)
     }
   }, [combo])
 
@@ -64,6 +81,8 @@ export function GameInfo({ score, moves, targetScore, level, combo }: GameInfoPr
     }
   }, [progress, isComplete])
 
+  const showComboIndicator = combo > 1 || comboFadeOut
+
   return (
     <div className="game-info">
       <div className="info-item">
@@ -74,8 +93,10 @@ export function GameInfo({ score, moves, targetScore, level, combo }: GameInfoPr
       <div className="info-item">
         <span className="info-label">分数</span>
         <span className={`info-value ${scoreAnimate ? 'score-pop' : ''}`}>{score}</span>
-        {combo > 1 && (
-          <span className={`combo-indicator ${comboAnimate ? 'combo-pop' : ''}`}>x{combo}</span>
+        {showComboIndicator && (
+          <span className={`combo-indicator ${comboAnimate ? 'combo-pop' : ''} ${comboFadeOut ? 'combo-fade-out' : ''}`}>
+            x{comboFadeOut ? displayCombo : combo}
+          </span>
         )}
       </div>
       

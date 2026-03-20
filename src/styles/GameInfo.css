@@ -237,22 +237,44 @@
   color: #fbbf24;
   margin-left: 8px;
   font-weight: bold;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  transition: opacity 0.3s ease;
 }
 
 .combo-indicator.combo-pop {
   animation: combo-pop 0.5s ease-out;
 }
 
+.combo-indicator.combo-fade-out {
+  animation: combo-fade-out 0.6s ease-out forwards;
+}
+
 @keyframes combo-pop {
   0% {
     transform: scale(1);
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
   }
   50% {
-    transform: scale(1.5);
+    transform: scale(1.6);
     color: #f59e0b;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.8), 0 0 30px rgba(251, 191, 36, 0.4);
   }
   100% {
     transform: scale(1);
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  }
+}
+
+@keyframes combo-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1.3) translateY(0);
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+    text-shadow: none;
   }
 }
 
