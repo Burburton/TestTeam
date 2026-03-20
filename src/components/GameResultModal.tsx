@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react'
 import { GameStatus } from '../types'
+import { calculateStars } from '../utils/starRating'
 import '../styles/GameResultModal.css'
 
 interface GameResultModalProps {
@@ -22,11 +24,31 @@ export function GameResultModal({
   onRetry,
   onMainMenu
 }: GameResultModalProps) {
+  const [visibleStars, setVisibleStars] = useState(0)
+  const finalStars = calculateStars(score, targetScore)
+  const isWon = status === 'won'
+
+  useEffect(() => {
+    if (isWon && finalStars > 0) {
+      setVisibleStars(0)
+      const timers: ReturnType<typeof setTimeout>[] = []
+      for (let i = 1; i <= finalStars; i++) {
+        const timer = setTimeout(() => {
+          setVisibleStars(i)
+        }, i * 300)
+        timers.push(timer)
+      }
+      return () => {
+        timers.forEach(timer => clearTimeout(timer))
+      }
+    } else {
+      setVisibleStars(0)
+    }
+  }, [isWon, finalStars])
+
   if (status === 'playing') {
     return null
   }
-
-  const isWon = status === 'won'
 
   return (
     <div className="modal-overlay">
@@ -51,6 +73,26 @@ export function GameResultModal({
               <span className="stat-value">{targetScore}</span>
             </div>
           </div>
+          
+          {isWon && (
+            <div className="star-result-container">
+              <div className="star-result">
+                {[1, 2, 3].map(star => (
+                  <span 
+                    key={star} 
+                    className={`result-star ${star <= visibleStars ? 'filled' : ''} ${star === visibleStars ? 'animate' : ''}`}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+              <div className="star-label">
+                {finalStars === 3 && '完美通关！'}
+                {finalStars === 2 && '表现出色！'}
+                {finalStars === 1 && '成功过关！'}
+              </div>
+            </div>
+          )}
           
           {isWon && (
             <div className="result-message success">
